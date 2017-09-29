@@ -1,0 +1,63 @@
+
+* manifest.json
+** canonical documentation?
+
+there is an example-gear which provides a good example, but may be there is more?
+
+*** what values are known to inputs.type.enum for base "file"?
+
+mri-deface/manifest.json:  "inputs": {
+mri-deface/manifest.json-    "anatomical": {
+mri-deface/manifest.json-      "base": "file",
+mri-deface/manifest.json-      "type": {
+mri-deface/manifest.json-        "enum": [
+mri-deface/manifest.json-          "nifti",
+mri-deface/manifest.json-          "mgh",
+mri-deface/manifest.json-          "dicom"
+mri-deface/manifest.json-        ]
+mri-deface/manifest.json-      }
+mri-deface/manifest.json-    }
+
+*** how to specify an option which could have a single, or multiple values (from a set/Enum)?
+
+probably should be enough to just deal with a list
+
+*** how does it matter?
+
+** could manifest.json have some custom/arbitrary field(s)? (I could use them for some meta-data for the later nipype runner)
+** what 'input's could be?  only files?
+** **requires** any way to describe that an option is required only if some other (optional) option is specified?
+
+** **xor** to describe that one input should be specified but not the other 
+** to make sure: 'outputs' are nohow "prescribed", correct?
+
+** configuration is stored  in multiple places and differently?
+
+if [[ -f $CONFIG_FILE ]]; then
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' $CONFIG_FILE)
+else
+  CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
+  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' $CONFIG_FILE)
+fi
+
+
+* Generic
+
+** any good "json selector" so I could quickly query fields among bunch of sample manifest.json files?
+** any easy way to 'fetch all gears sources'?
+
+git submodule   or  mr ...?
+
+
+* TODOs for me
+** inputs could be enum base file and list supported "formats"
+
+so I need to deduce/annotate since no information is present within nipype interface definition
+
+** check if any interesting logs are in html so we could also use webpage2html
+
+** ENV preservation way
+
+# ENV preservation for Flywheel Engine
+RUN env -u HOSTNAME -u PWD | \
+  awk -F = '{ print "export " $1 "=\"" $2 "\"" }' > ${FLYWHEEL}/docker-env.sh

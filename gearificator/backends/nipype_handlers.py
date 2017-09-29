@@ -40,6 +40,7 @@ def _get_rec(gear_type, trait, cast=lambda x: x, **kwargs):
         rec['optional'] = True
     # Nipype
     #  requires?
+    #  xor?  (so there is one or another, not both together)
     # Gear:
     #  base -- for enum?
     return rec
@@ -75,6 +76,10 @@ def Enum(trait):
 
     return rec
 
+
+def InputMultiPath(trait):
+    #import pdb; pdb.set_trace()
+    pass
 
 # nipype.interfaces.base
 def Str(trait):
