@@ -1,0 +1,42 @@
+# Create a base docker container that will run nipype and ANTs
+#
+#
+
+FROM neurodebian:stretch
+MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
+
+
+# Install additional APT mirror for NeuroDebian for better availability/resilience
+RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
+RUN echo deb http://neurodeb.pirsquared.org xenial main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
+
+# To prevent interactive debconf during installations
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y \
+        python-pip \
+        eatmydata
+
+
+# Download/Install gearificator suite
+# TODO  RUN pip install git+http://github.com/yarikoptic/gearificator
+
+
+# Make directory for flywheel spec (v0)
+# TODO:  gearificator prepare-docker recipename_or_url
+# cons: would somewhat loose cached steps (pre-installation, etc)
+# For now -- entire manual template
+RUN eatmydata apt-get update \
+    && eatmydata apt-get install -y \
+        python-nipype \
+        ants
+RUN apt-get clean
+ENV FLYWHEEL /flywheel/v0
+RUN mkdir -p ${FLYWHEEL}
+COPY run ${FLYWHEEL}/run
+COPY manifest.json ${FLYWHEEL}/manifest.json
+COPY template.fsf ${FLYWHEEL}/
+
+
+# Configure entrypoint
+ENTRYPOINT ["/flywheel/v0/run"]
