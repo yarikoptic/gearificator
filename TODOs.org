@@ -2,6 +2,16 @@
 * manifest.json
 ** canonical documentation?
 
+Michael Perry
+4:06 PM
+https://github.com/flywheel-io/gears/tree/master/spec
+https://github.com/flywheel-io/gears/blob/master/spec/manifest.schema.json
+Exchange: https://github.com/flywheel-io/exchange
+
+Michael Perry
+4:29 PM
+https://github.com/scitran/core/blob/master/api/filetypes.json
+
 there is an example-gear which provides a good example, but may be there is more?
 
 *** what values are known to inputs.type.enum for base "file"?
@@ -25,10 +35,16 @@ probably should be enough to just deal with a list
 *** how does it matter?
 
 ** could manifest.json have some custom/arbitrary field(s)? (I could use them for some meta-data for the later nipype runner)
-** what 'input's could be?  only files?
-** **requires** any way to describe that an option is required only if some other (optional) option is specified?
 
-** **xor** to describe that one input should be specified but not the other 
+custom
+
+** what 'input's could be?  only files?
+
+yes
+
+** **requires** any way to describe that an option is required only if some other (optional) option is specified?
+** **xor** to describe that one input should be specified but not the other
+
 ** to make sure: 'outputs' are nohow "prescribed", correct?
 
 ** configuration is stored  in multiple places and differently?

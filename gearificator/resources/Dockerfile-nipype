@@ -8,7 +8,7 @@ MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
 
 # Install additional APT mirror for NeuroDebian for better availability/resilience
 RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
-RUN echo deb http://neurodeb.pirsquared.org xenial main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
+RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
 
 # To prevent interactive debconf during installations
 ARG DEBIAN_FRONTEND=noninteractive
