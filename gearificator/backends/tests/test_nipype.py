@@ -4,8 +4,9 @@ from ..nipype import (
     prepare_run,
 )
 
+from gearificator.runtime.base import get_interface
 
-def test_ants():
+def test_ants(tmpdir):
     from nipype.interfaces.ants.registration import ANTS, Registration
     from pprint import pprint
     import json
@@ -36,4 +37,10 @@ def test_ants():
         version="0.0.automagicbasedongitifnotdefined"
     )
     #manifest = extract_manifest(Registration)
-    print(json.dumps(manifest, indent=2))
+    manifest_fname = str(tmpdir.join('manifest.json'))
+    with open(manifest_fname, 'w') as f:
+        json.dump(manifest, f, indent=2)
+    print(manifest_fname)
+
+    interface = get_interface(manifest_fname)
+    assert interface is ANTS

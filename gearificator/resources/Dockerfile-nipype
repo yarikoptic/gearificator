@@ -5,7 +5,6 @@
 FROM neurodebian:stretch
 MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
 
-
 # Install additional APT mirror for NeuroDebian for better availability/resilience
 RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
 RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
@@ -17,11 +16,6 @@ RUN apt-get update \
         python-pip \
         eatmydata
 
-
-# Download/Install gearificator suite
-# TODO  RUN pip install git+http://github.com/yarikoptic/gearificator
-
-
 # Make directory for flywheel spec (v0)
 # TODO:  gearificator prepare-docker recipename_or_url
 # cons: would somewhat loose cached steps (pre-installation, etc)
@@ -30,13 +24,20 @@ RUN eatmydata apt-get update \
     && eatmydata apt-get install -y \
         python-nipype \
         ants
+
+# Note: both ANTS and antsRegistration are symlinked under /usr/bin so nothing
+# for us to do here with the PATH
 RUN apt-get clean
 ENV FLYWHEEL /flywheel/v0
 RUN mkdir -p ${FLYWHEEL}
-COPY run ${FLYWHEEL}/run
-COPY manifest.json ${FLYWHEEL}/manifest.json
-COPY template.fsf ${FLYWHEEL}/
 
+# Download/Install gearificator suite
+# TODO  RUN pip install git+http://github.com/yarikoptic/gearificator
 
-# Configure entrypoint
-ENTRYPOINT ["/flywheel/v0/run"]
+## COPY run ${FLYWHEEL}/run
+## COPY manifest.json ${FLYWHEEL}/manifest.json
+## COPY template.fsf ${FLYWHEEL}/
+##
+##
+## # Configure entrypoint
+## ENTRYPOINT ["/flywheel/v0/run"]
