@@ -100,9 +100,9 @@ under?
 
 * TODO  could "name" contain upper case, why not?
 
-* TODO  enum difficulty
+* TODO  enum difficulties
 
-schema seems to be different between inputs and config
+** schema seems to be different between inputs and config
 
 inputs:
 
@@ -128,3 +128,23 @@ mriqc/manifest.json-        "T1w",
 mriqc/manifest.json-        "T2w"
 mriqc/manifest.json-      ]
 
+** could it be for ints at all?
+
+    def validate(self, *args, **kwargs):
+        for error in self.iter_errors(*args, **kwargs):
+>           raise error
+E           ValidationError: {u'default': 3, u'optional': True, u'enum': [3, 2], u'type': u'int', u'description': u'Dimension [default=3]'} is not valid under any of the given schemas
+E
+E           Failed validating u'oneOf' in schema[u'properties'][u'config'][u'additionalProperties']:
+E               {u'description': u'A schema directive.',
+E                u'oneOf': [{u'$ref': u'http://json-schema.org/draft-04/schema'}]}
+E
+E           On instance[u'config'][u'dimension']:
+E               {u'default': 3,
+E                u'description': u'Dimension [default=3]',
+E                u'enum': [3, 2],
+E                u'optional': True,
+E                u'type': u'int'}
+
+
+* TODO  example of jq query to get all enums in config or inputs

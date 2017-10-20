@@ -66,8 +66,8 @@ def get_version():
 def analyze_spec(spec_cls, defaults={}):
     """Given the Spec class, extract the instances and interesting fields"""
     spec = spec_cls()
-    configs = OrderedDict()
-    files = OrderedDict()
+    config = OrderedDict()
+    inputs = OrderedDict()
     for opt, trait in spec.items():
         # We better skip some, at least for now,
         # TODO: some might be specific to interfaces
@@ -100,8 +100,8 @@ def analyze_spec(spec_cls, defaults={}):
         if trait_rec is None:
             lgr.warning("Handler returned None for %s", trait)
         else:
-            (files if trait_handler in {'File', 'InputMultiPath'} else configs)[opt] = trait_rec
-    return configs, files
+            (inputs if trait_handler in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
+    return config, inputs
 
 
 def extract_manifest(cls, defaults={}):

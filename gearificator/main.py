@@ -37,7 +37,9 @@ lgr = get_logger('main')
         # },
 
 """
-def create_gear(obj, outdir, manifest_fields={}, defaults={}):
+def create_gear(obj, outdir, manifest_fields={}, defaults={},
+                build_docker=True,
+                validate=False):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
@@ -87,7 +89,8 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={}):
     manifest_fname = os.path.join(outdir, MANIFEST_FILENAME)
     with open(manifest_fname, 'w') as f:
         json.dump(manifest, f, indent=2)
-    validate_manifest(manifest_fname)
+    if validate:
+        validate_manifest(manifest_fname)
 
     # sanity check
     interface = load_interface_from_manifest(manifest_fname)
@@ -104,20 +107,21 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={}):
         pip_packages=getattr(backend, 'PIP_PACKAGES', [])
     )
 
-    # TODO: docker build -t image_name
-    lgr.info("Running docker build")
-    build_cmd = ['docker', 'build', '-t', docker_image, '.']
-    print(build_cmd)
-    popen = Popen(build_cmd, cwd=outdir)
-    res = popen.wait()
-    if res:
-        raise RuntimeError(
-            "Failed to build docker image: exit code was %d"
-            % res
-        )
-    gear_spec['docker_build_stdout'] = 'TODO'
-    gear_spec['docker_build_stderr'] = 'TODO'
-    return gear_spec
+    if build_docker:
+        # TODO: docker build -t image_name
+        lgr.info("Running docker build")
+        build_cmd = ['docker', 'build', '-t', docker_image, '.']
+        print(build_cmd)
+        popen = Popen(build_cmd, cwd=outdir)
+        res = popen.wait()
+        if res:
+            raise RuntimeError(
+                "Failed to build docker image: exit code was %d"
+                % res
+            )
+        gear_spec['docker_build_stdout'] = 'TODO'
+        gear_spec['docker_build_stderr'] = 'TODO'
+        return gear_spec
 
 
 def create_dockerfile(fname, base_image, deb_packages=[], pip_packages=[]):

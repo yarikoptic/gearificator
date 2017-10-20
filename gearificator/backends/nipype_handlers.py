@@ -63,7 +63,9 @@ def Bool(trait, **kwargs):
 def Enum(trait, **kwargs):
     # TODO could be of differing types may be, ATM need to dedue the type
     values = trait.handler.values
-    rec = _get_rec({'enum': values}, trait, **kwargs)
+    # that is how it would have been for inputs
+    # rec = _get_rec({'enum': values}, trait, **kwargs)
+
     # base???
     # TODO: could/sould we use trait.argstr ??
     value_types = set(map(type, values))
@@ -71,11 +73,15 @@ def Enum(trait, **kwargs):
         lgr.error("Enum without values??")
     elif len(value_types) == 1:
         value_type = value_types.pop()  # TODO - map etc
-        base = value_type.__name__  # TODO -- deduce type
+        base_type = value_type.__name__  # TODO -- deduce type
         # apply some mappings
-        rec['base'] = {
+        base_type = {
             'unicode': 'string'
-        }.get(base, base)
+        }.get(base_type, base_type)
+        rec = _get_rec(base_type, trait, **kwargs)
+        # for inputs, we have 'base' to be 'file' or 'api-key', and then
+        # type=enum={}
+        rec['enum'] = values
     else:
         lgr.error("Cannot map multiple types %s to the base type", value_types)
 

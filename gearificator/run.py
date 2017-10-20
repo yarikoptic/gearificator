@@ -96,7 +96,7 @@ def main():
 
     # Load interface
     manifest = load_json(opj(topdir, MANIFEST_FILENAME))
-    config = load_json(opj(topdir, CONFIG_FILENAME))
+    config = load_json(opj(topdir, CONFIG_FILENAME)).get('config', {})
 
     interface_cls = load_interface_from_manifest(manifest)
     interface = interface_cls()
