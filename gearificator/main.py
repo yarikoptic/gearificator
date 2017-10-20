@@ -157,6 +157,9 @@ RUN mkdir -p ${FLYWHEEL}
 COPY run ${FLYWHEEL}/run
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
+# e.g. Nipype and other pythonish beasts might crash unless 
+ENV LC_ALL C.UTF-8
+
 # Configure entrypoint
 ENTRYPOINT ["/flywheel/v0/run"]
 
@@ -177,9 +180,11 @@ def create_run(fname):
 
 from gearificator.runtime import main
 
-if __name__ == 'main':  # all Python folks like that
+if __name__ == '__main__':  # all Python folks like that
     main()
 """
     with open(fname, 'w') as f:
         f.write(content)
+    # make it executable
+    os.chmod(fname, 0o755)
     return content

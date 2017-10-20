@@ -29,6 +29,8 @@ import os
 import json
 import sys
 
+from six import string_types
+
 from glob import glob
 
 from os.path import (
@@ -67,7 +69,7 @@ def load_interface(module_cls):
 def load_interface_from_manifest(j):
     """Load the manifest.json and extract the interface definition
     """
-    if not isinstance(j, (list, tuple)):
+    if isinstance(j, string_types):
         # must be a filename
         j = load_json(j)
     try:
