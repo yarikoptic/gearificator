@@ -27,6 +27,7 @@
 
 from __future__ import absolute_import
 
+import nipype
 import re
 from collections import OrderedDict
 from nipype.interfaces.base import traits
@@ -47,7 +48,7 @@ PIP_PACKAGES = [
     # if we are to contribute/extend docs etc
     # 'git+https://github.com/nipy/nipype'
 ]
-
+LICENSE = ['BSD-3-Clause']
 # not needed here but in general, should be a part of the specific
 # recipe, depends on the app/pkg/etc
 # SOURCE_FILE =
@@ -123,15 +124,15 @@ def extract_manifest(cls, defaults={}):
 
     manifest = OrderedDict()
 
-    manifest['name'] = cls.__name__
+    manifest['name'] = cls.__name__.lower()
     # TODO: fill out what we could about stuff
     # TODO: 'custom':'docker-image'
 
-    if config:
-        manifest['config'] = config
-    if inputs:
-        manifest['inputs'] = inputs
+    manifest['config'] = config or {}
+    manifest['inputs'] = inputs or {}
 
+    manifest['url'] = "http://nipype.readthedocs.io/en/%s/interfaces/generated/interfaces.ants/registration.html" % nipype.__version__
+    # TODO:  license -- we should add the license for the piece?
     #manifest['author'] = 'Some authors, possibly from a recipe/API'
     #manifest['description'] = 'Some description, e.g. %s' % cls.__doc__
 

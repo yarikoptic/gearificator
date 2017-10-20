@@ -89,3 +89,42 @@ mri-deface/run:INPUT_DIR=$FLYWHEEL_BASE/input/anatomical
 mriqc/run:INPUT_DIR=$FLYWHEEL_BASE/input/nifti
 
 so could be all over?
+
+* TODO "License" field should allow for the list
+
+Unlikely any particular gear is covered by a single license...
+Hard to say where to define the boundary -- since any gear probably carries/uses
+lots of different pieces.  So what kind of a license should be mentioned? of the
+underlying piece or my idea what my work in construction of the gear is licensed
+under?
+
+* TODO  could "name" contain upper case, why not?
+
+* TODO  enum difficulty
+
+schema seems to be different between inputs and config
+
+inputs:
+
+fsl-feat/manifest.json-    "NIFTI": {
+fsl-feat/manifest.json-      "description": "Anatomical NIfTI image, or multi-channel set of images, to be segmented.",
+fsl-feat/manifest.json-      "base": "file",
+fsl-feat/manifest.json-      "type": {
+fsl-feat/manifest.json:        "enum": [
+fsl-feat/manifest.json-          "nifti"
+fsl-feat/manifest.json-        ]
+fsl-feat/manifest.json-      }
+
+
+config:
+
+mriqc/manifest.json-    "measurement": {
+mriqc/manifest.json-      "default": "Functional",
+mriqc/manifest.json-      "description": "Type of input image. Can be either 'T1w', 'T2w' or 'Functional' (default='Functional').",
+mriqc/manifest.json-      "type": "string",
+mriqc/manifest.json:      "enum": [
+mriqc/manifest.json-        "Functional",
+mriqc/manifest.json-        "T1w",
+mriqc/manifest.json-        "T2w"
+mriqc/manifest.json-      ]
+

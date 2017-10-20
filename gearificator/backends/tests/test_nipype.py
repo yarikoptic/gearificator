@@ -31,13 +31,13 @@ def test_ants(tmpdir):
         # Additional fields for the
         manifest_fields=dict(
             author="The Machine",
-            description="Registration using ANTS from ANTs",
-            label="Some label",
-            license="Some license",
+            description="Registration using ANTS from ANTs toolkit",
+            label="ANTs ANTS",
+            license='BSD-3-Clause',
             maintainer="You?",
             name="nipype-ants-ants",
-            source="TODO",
-            url="TODO automagically based on nipype docs",
+            source="",  # URL to the gearificator? or we will publish a generated collection somewhere?
+            url="",  # TODO automagically based on nipype docs",
         ),
         # Provide some sensible defaults for some options even though nipype
         # does not

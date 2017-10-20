@@ -19,6 +19,7 @@ from gearificator.consts import (
 from gearificator.exceptions import UnknownBackend
 
 from gearificator.run import load_interface_from_manifest
+from gearificator.validator import validate_manifest
 
 lgr = get_logger('main')
 """
@@ -86,6 +87,7 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={}):
     manifest_fname = os.path.join(outdir, MANIFEST_FILENAME)
     with open(manifest_fname, 'w') as f:
         json.dump(manifest, f, indent=2)
+    validate_manifest(manifest_fname)
 
     # sanity check
     interface = load_interface_from_manifest(manifest_fname)

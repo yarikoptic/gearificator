@@ -1,3 +1,4 @@
+import json
 import os
 from os.path import (
     isabs,
@@ -59,3 +60,13 @@ class chpwd(object):
             # Need to use self.__class__ so this instance, if the entire
             # thing mocked during the test, still would use correct chpwd
             self.__class__(self._prev_pwd, logsuffix="(coming back)")
+
+
+def load_json(filename, must_exist=True):
+    if not os.path.exists(filename):
+        if not must_exist:
+            return {}
+        else:
+            raise ValueError("File %s does not exist!" % filename)
+    with open(filename) as f:
+        return json.load(f, encoding='utf-8')

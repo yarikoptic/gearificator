@@ -71,7 +71,11 @@ def Enum(trait, **kwargs):
         lgr.error("Enum without values??")
     elif len(value_types) == 1:
         value_type = value_types.pop()  # TODO - map etc
-        rec['base'] = value_type.__name__  # TODO -- deduce type
+        base = value_type.__name__  # TODO -- deduce type
+        # apply some mappings
+        rec['base'] = {
+            'unicode': 'string'
+        }.get(base, base)
     else:
         lgr.error("Cannot map multiple types %s to the base type", value_types)
 

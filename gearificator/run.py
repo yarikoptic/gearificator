@@ -26,33 +26,26 @@
 """
 
 import os
-import json
 import sys
-
-from six import string_types
-
 from glob import glob
-
+from importlib import import_module
 from os.path import (
     join as opj,
     exists
 )
-from importlib import import_module
 
+from six import string_types
+
+from gearificator import get_logger
 from gearificator.consts import (
-    #MANIFEST_BACKEND_FIELD,
+    # MANIFEST_BACKEND_FIELD,
     MANIFEST_CUSTOM_SECTION,
     MANIFEST_CUSTOM_INTERFACE,
     MANIFEST_FILENAME,
     CONFIG_FILENAME,
 )
+from gearificator.utils import load_json
 
-from gearificator.exceptions import (
-    UnknownBackend
-)
-
-
-from gearificator import get_logger
 lgr = get_logger('runtime')
 lgr.setLevel(10)  # DEBUG
 # TODO: might want to beautify
@@ -78,13 +71,6 @@ def load_interface_from_manifest(j):
         raise ValueError("Did not find definition of the interface among %s"
                          % str(j.get('custom')))
     return load_interface(module_cls)
-
-
-def load_json(filename):
-    if not os.path.exists(filename):
-        return {}
-    with open(filename) as f:
-        return json.load(f)
 
 
 def errorout(msg, exitcode=1):
