@@ -25,6 +25,7 @@
   THE SOFTWARE.
 """
 
+import re
 # for some reason was not sufficient here! so just renamed to _nipype
 from __future__ import absolute_import
 from collections import OrderedDict
@@ -61,7 +62,7 @@ def get_version():
     return ".nipype.%s" % nipype.__version__
 
 
-def analyze_spec(spec_cls):
+def analyze_spec(spec_cls, defaults={}):
     """Given the Spec class, extract the instances and interesting fields"""
     spec = spec_cls()
     configs = OrderedDict()
@@ -83,7 +84,18 @@ def analyze_spec(spec_cls):
         if handler is None:
             lgr.warning("No handler for %s of %s (%s)", opt, trait_type_class, trait_handler)
             continue
-        trait_rec = handler(trait)
+        trait_rec = handler(trait, default=defaults.get(opt))
+        if trait_rec:
+            desc = trait_rec.get('description')
+            if not desc or desc.startswith(' [default'):
+                # quite often options are "self-descriptive" so we will take the name
+                # and use it as a description with minor changes
+                new_desc = opt.capitalize().replace('_', ' ')
+                # TODO: move into a function.  Add tune ups like  Num (of)? -> Number of
+                if desc:
+                    # add back the default
+                    new_desc += desc
+                trait_rec['description'] = new_desc
         if trait_rec is None:
             lgr.warning("Handler returned None for %s", trait)
         else:
@@ -91,28 +103,25 @@ def analyze_spec(spec_cls):
     return configs, files
 
 
-def extract_manifest(cls, **fields):
+def extract_manifest(cls, defaults={}):
     """
 
     Parameters
     ----------
     cls
       Class to extract the manifest from/for
-    fields
-      Additional fields to place into the manifest
 
     Returns
     -------
 
     """
     # will be a mix of options and "inputs" (identified by using Files)
-    config, inputs = analyze_spec(cls.input_spec)
+    config, inputs = analyze_spec(cls.input_spec, defaults=defaults)
     #  Not yet sure if actually needed right here since outputs are not
     #  part of the manifest
     # output_spec = analyze_spec(cls.output_spec)
 
     manifest = OrderedDict()
-    manifest.update(sorted(fields.items()))
 
     manifest['name'] = cls.__name__
     # TODO: fill out what we could about stuff

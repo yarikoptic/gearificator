@@ -29,7 +29,7 @@
 #MANIFEST_BACKEND_FIELD = "gearificator-backend"
 MANIFEST_CUSTOM_SECTION = "gearificator"
 MANIFEST_CUSTOM_INTERFACE = "interface"
-MANIFEST_CUSTOM_OUTPUTS = "outputsr"
+MANIFEST_CUSTOM_OUTPUTS = "outputs"
 
 DOCKER_IMAGE_REPO = "gearificator"
 MANIFEST_FILENAME = "manifest.json"

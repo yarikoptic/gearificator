@@ -116,12 +116,12 @@ def main():
     interface = interface_cls()
 
     # Parametrize it with configuration options
-    # We do not need to pass defaults from manifest since there they are
-    # the defaults as in nipype
-    inputs = manifest.get('inputs')
+    inputs = manifest.get('inputs', {})
+    manifest_config = manifest.get('config', {})
 
     # tricky ones, yet to handle
     # probably analyze what inputs are present, and assign correspondingly
+    import pdb; pdb.set_trace()
     for input_, input_params in inputs:
         input_dir = opj(indir, input_)
         filenames = None
@@ -140,6 +140,12 @@ def main():
         if not filenames:
             lgr.warning("No input for %s was provided", input_)
 
+    # We do need to pass defaults from manifest since we might have
+    # provided custom ones
+    for c, v in manifest_config.items():
+        if 'default' in v:
+            setattr(interface.inputs, c, v['default'])
+
     # Further configuration
     for c, v in config.items():
         if c not in inputs:
@@ -152,12 +158,13 @@ def main():
     # Now we need to get through the outputs!
     # flywheel does not yet provide options to specify outputs, so we
     # will stick them into custom:gearificator-outputs
-    interface.inputs.out_file = opj(outdir, "TODO")
+    #interface.inputs.out_file = opj(outdir, "TODO")
 
     try:
         out = interface.run()
     except Exception as exc:
-        lgr.error("Error while running %s", interface_cls)
+        lgr.error("Error while running %s: %s",
+                  interface_cls, exc)
     finally:
         # Should we clean up anything??  may be some workdir
         pass
@@ -170,6 +177,6 @@ def main():
     if not outputs:
         errorout("Yarik expected some outputs, got nothing")
 
-    # But there is may be nothing really todo in our case?
-    # May be some other interfaces would want to do something custom, we will
-    # just save results
+        # But there is may be nothing really todo in our case?
+        # May be some other interfaces would want to do something custom, we will
+        # just save results

@@ -36,7 +36,7 @@ lgr = get_logger('main')
         # },
 
 """
-def create_gear(obj, outdir, manifest_fields={}):
+def create_gear(obj, outdir, manifest_fields={}, defaults={}):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
@@ -61,7 +61,8 @@ def create_gear(obj, outdir, manifest_fields={}):
     name = manifest_fields['name']
 
     manifest = manifest_fields.copy()
-    manifest.update(backend.extract_manifest(obj, version=version))
+    manifest['version'] = version
+    manifest.update(backend.extract_manifest(obj, defaults=defaults))
     gear_spec['manifest'] = manifest
     # Store our custom settings
     if 'custom' not in manifest:
@@ -152,13 +153,14 @@ RUN mkdir -p ${FLYWHEEL}
 
 # Download/Install gearificator suite
 # TODO  install git if we do via git
-# TODO  RUN pip install git+http://github.com/yarikoptic/gearificator
-
-COPY run ${FLYWHEEL}/run
-COPY manifest.json ${FLYWHEEL}/manifest.json
+RUN eatmydata apt-get install -y git
+RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && \
+    pip install -e /srv/gearificator
 
 # e.g. Nipype and other pythonish beasts might crash unless 
 ENV LC_ALL C.UTF-8
+COPY run ${FLYWHEEL}/run
+COPY manifest.json ${FLYWHEEL}/manifest.json
 
 # Configure entrypoint
 ENTRYPOINT ["/flywheel/v0/run"]

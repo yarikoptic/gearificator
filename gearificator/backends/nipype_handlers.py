@@ -13,7 +13,7 @@ lgr = logging.getLogger('gearificator.nipype')
 
 # TODO: may be RF into a class with fancy getattr
 # to avoid calling for default handling
-def _get_rec(gear_type, trait, cast=lambda x: x, **kwargs):
+def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
     """Default record handling
 
     Parameters
@@ -24,10 +24,11 @@ def _get_rec(gear_type, trait, cast=lambda x: x, **kwargs):
     """
     rec = OrderedDict({'type': gear_type})
     rec.update(kwargs)
-    #if trait.desc:
-    #    rec['description'] = trait.desc
-    rec['description'] = trait.get_help()
-    if trait.default is not None:
+    rec['description'] = trait.desc if trait.dec else ''
+    # rec['description'] = trait.get_help()
+    if default is not None:
+        rec['default'] = default
+    elif trait.default is not None:
         if trait.default_kind != 'value':
             lgr.warning("Not implemented for default_kind=%s",
                         trait.default_kind)
@@ -47,22 +48,22 @@ def _get_rec(gear_type, trait, cast=lambda x: x, **kwargs):
 
 
 # traits.trait_types
-def Int(trait):
-    return _get_rec('integer', trait)
+def Int(trait, **kwargs):
+    return _get_rec('integer', trait, **kwargs)
 
 
-def Float(trait):
-    return _get_rec('number', trait)
+def Float(trait, **kwargs):
+    return _get_rec('number', trait, **kwargs)
 
 
-def Bool(trait):
-    return _get_rec('boolean', trait)
+def Bool(trait, **kwargs):
+    return _get_rec('boolean', trait, **kwargs)
 
 
-def Enum(trait):
+def Enum(trait, **kwargs):
     # TODO could be of differing types may be, ATM need to dedue the type
     values = trait.handler.values
-    rec = _get_rec({'enum': values}, trait)
+    rec = _get_rec({'enum': values}, trait, **kwargs)
     # base???
     # TODO: could/sould we use trait.argstr ??
     value_types = set(map(type, values))
@@ -77,10 +78,10 @@ def Enum(trait):
     return rec
 
 
-def InputMultiPath(trait):
+def InputMultiPath(trait, **kwargs):
     #import pdb; pdb.set_trace()
     pass
 
 # nipype.interfaces.base
-def Str(trait):
-    return _get_rec('string', trait)
+def Str(trait, **kwargs):
+    return _get_rec('string', trait, **kwargs)

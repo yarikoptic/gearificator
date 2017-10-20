@@ -36,7 +36,14 @@ def test_ants(tmpdir):
             name="nipype-ants-ants",
             source="TODO",
             url="TODO automagically based on nipype docs",
-        )
+        ),
+        # Provide some sensible defaults for some options even though nipype
+        # does not
+        defaults={
+            'transformation_model': 'SyN',
+            'dimension': 3,
+            'metric': ['CC'],
+        }
     )
     print(json.dumps(gear_spec, indent=2))
 
