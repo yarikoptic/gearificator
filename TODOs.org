@@ -77,3 +77,15 @@ so I need to deduce/annotate since no information is present within nipype inter
 # ENV preservation for Flywheel Engine
 RUN env -u HOSTNAME -u PWD | \
   awk -F = '{ print "export " $1 "=\"" $2 "\"" }' > ${FLYWHEEL}/docker-env.sh
+
+
+* TODO Q: how does UI know where to stick inputs and where to look for outputs?
+
+$> grep INPUT_DIR= */run      
+bxh-xcede-tools-qa/run:INPUT_DIR=$FLYWHEEL_BASE/input/fmri_dicom_input
+fmriprep/run:INPUT_DIR=$FLYWHEEL_BASE/input
+fsl-feat/run:INPUT_DIR=$FLYWHEEL_BASE/input/NIFTI
+mri-deface/run:INPUT_DIR=$FLYWHEEL_BASE/input/anatomical
+mriqc/run:INPUT_DIR=$FLYWHEEL_BASE/input/nifti
+
+so could be all over?

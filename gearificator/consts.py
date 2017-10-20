@@ -26,5 +26,11 @@
 """
 
 # there is no need I think
-# MANIFEST_FIELD_BACKEND = "gearificator-backend"
-MANIFEST_FIELD_INTERFACE = "gearificator-interface"
+#MANIFEST_BACKEND_FIELD = "gearificator-backend"
+MANIFEST_CUSTOM_SECTION = "gearificator"
+MANIFEST_CUSTOM_INTERFACE = "interface"
+MANIFEST_CUSTOM_OUTPUTS = "outputsr"
+
+DOCKER_IMAGE_REPO = "gearificator"
+MANIFEST_FILENAME = "manifest.json"
+CONFIG_FILENAME = "config.json"

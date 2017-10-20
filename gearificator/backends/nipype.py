@@ -30,20 +30,21 @@ from __future__ import absolute_import
 from collections import OrderedDict
 from nipype.interfaces.base import traits
 
-from ..consts import MANIFEST_FIELD_INTERFACE
 from . import nipype_handlers
 
 # TODO: Should become part of some kind of a recipe
 #       which would prescribe the environment and then what
 #       interface is being gearified, with possible tune ups and options
 DOCKER_BASE_IMAGE = "neurodebian:stretch"
+#DOCKER_IMAGE = "gearificator:ants-test"  # neurodebian:stretch"
 DEB_PACKAGES = [
     'ants',  # possibly versioned   ants=2.2.0-1
+    'python-nipype',  # probably actually would need pip install it
 ]
 PIP_PACKAGES = [
     # most likely we will need master of nipype for a while
     # if we are to contribute/extend docs etc
-    'git+https://github.com/nipy/nipype'
+    # 'git+https://github.com/nipy/nipype'
 ]
 
 # not needed here but in general, should be a part of the specific
@@ -51,10 +52,13 @@ PIP_PACKAGES = [
 # SOURCE_FILE =
 # ADD_PATH =
 
-
-
 import logging
 lgr = logging.getLogger('gearificator.nipype')
+
+
+def get_version():
+    import nipype
+    return ".nipype.%s" % nipype.__version__
 
 
 def analyze_spec(spec_cls):
@@ -121,46 +125,5 @@ def extract_manifest(cls, **fields):
 
     #manifest['author'] = 'Some authors, possibly from a recipe/API'
     #manifest['description'] = 'Some description, e.g. %s' % cls.__doc__
-    manifest['custom'] = {
-        MANIFEST_FIELD_INTERFACE: '%s:%s' % (cls.__module__, cls.__name__)
-    }
+
     return manifest
-
-
-def prepare_dockerfile():
-    raise NotImplementedError
-
-
-def prepare_run():
-    """Prepare run script
-
-    Should call into gearificator runner, which would invoke
-    the actual computation so be quite minimalistic,
-    should use manifest, and output specs
-    (stored somewhere) to accomplish the mission
-    """
-
-    #
-    raise NotImplementedError
-
-
-# TODO: mark it as the entry point, or may be eventually should be
-# called by the entry point depending on which interface was wrapped
-def runner():
-    """Actual runner of the computation, invoked within gear
-
-    Returns
-    -------
-
-    """
-    """
-if [[ -f $CONFIG_FILE ]]; then
-  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value)"' 
-  $CONFIG_FILE)
-else
-  CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
-  eval $(jq -r '.config | to_entries[] | "config_\(.key)=\(.value.default)"' 
-  $CONFIG_FILE)
-fi
-
-    """

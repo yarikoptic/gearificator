@@ -1,18 +1,19 @@
-from ..nipype import (
-    extract_manifest,
-    prepare_dockerfile,
-    prepare_run,
-)
+import os
+from os.path import join as opj
 
-from gearificator.runtime.base import get_interface
+from gearificator.runtime.base import load_interface_from_manifest
+from gearificator.main import create_gear
 
 def test_ants(tmpdir):
     from nipype.interfaces.ants.registration import ANTS, Registration
     from pprint import pprint
     import json
-    #pprint(extract_manifest(ANTS))
-    manifest = extract_manifest(
+
+    outdir = '/tmp/gearificator_output'
+
+    gear_spec = create_gear(
         ANTS,
+        outdir,
         # # May be add a re-mapping of some fields
         # fields_mapping={
         #     'fixed_image': 'target_image',
@@ -26,21 +27,18 @@ def test_ants(tmpdir):
         #     }
         # },
         # Additional fields for the
-        author="The Machine",
-        description="Registration using ANTS from ANTs",
-        label="Some label",
-        license="Some license",
-        maintainer="You?",
-        name="nipype-ants-ANTS",
-        source="TODO",
-        url="TODO automagically based on nipype docs",
-        version="0.0.automagicbasedongitifnotdefined"
+        manifest_fields=dict(
+            author="The Machine",
+            description="Registration using ANTS from ANTs",
+            label="Some label",
+            license="Some license",
+            maintainer="You?",
+            name="nipype-ants-ants",
+            source="TODO",
+            url="TODO automagically based on nipype docs",
+        )
     )
-    #manifest = extract_manifest(Registration)
-    manifest_fname = str(tmpdir.join('manifest.json'))
-    with open(manifest_fname, 'w') as f:
-        json.dump(manifest, f, indent=2)
-    print(manifest_fname)
+    print(json.dumps(gear_spec, indent=2))
 
-    interface = get_interface(manifest_fname)
+    interface = load_interface_from_manifest(opj(outdir, 'manifest.json'))
     assert interface is ANTS
