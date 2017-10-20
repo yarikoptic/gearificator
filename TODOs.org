@@ -66,11 +66,11 @@ git submodule   or  mr ...?
 
 
 * TODOs for me
-** inputs could be enum base file and list supported "formats"
+** TODO inputs could be enum base file and list supported "formats"
 
 so I need to deduce/annotate since no information is present within nipype interface definition
 
-** check if any interesting logs are in html so we could also use webpage2html
+** TODO check if any interesting logs are in html so we could also use webpage2html
 
 ** ENV preservation way
 
@@ -79,7 +79,7 @@ RUN env -u HOSTNAME -u PWD | \
   awk -F = '{ print "export " $1 "=\"" $2 "\"" }' > ${FLYWHEEL}/docker-env.sh
 
 
-* TODO Q: how does UI know where to stick inputs and where to look for outputs?
+* Q: how does UI know where to stick inputs and where to look for outputs?
 
 $> grep INPUT_DIR= */run      
 bxh-xcede-tools-qa/run:INPUT_DIR=$FLYWHEEL_BASE/input/fmri_dicom_input
@@ -88,7 +88,7 @@ fsl-feat/run:INPUT_DIR=$FLYWHEEL_BASE/input/NIFTI
 mri-deface/run:INPUT_DIR=$FLYWHEEL_BASE/input/anatomical
 mriqc/run:INPUT_DIR=$FLYWHEEL_BASE/input/nifti
 
-so could be all over?
+so could be all over?   nah -- matches the names of inputs.  outputs are indeed a "wild card"
 
 * TODO "License" field should allow for the list
 
@@ -147,4 +147,6 @@ E                u'optional': True,
 E                u'type': u'int'}
 
 
-* TODO  example of jq query to get all enums in config or inputs
+* TODO  example of jq query to get all enums in config or inputs?
+
+* TODO "official" way to mount things -- separately for config.json, inputs, and outputs?
