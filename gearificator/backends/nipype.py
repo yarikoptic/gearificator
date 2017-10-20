@@ -25,9 +25,9 @@
   THE SOFTWARE.
 """
 
-import re
-# for some reason was not sufficient here! so just renamed to _nipype
 from __future__ import absolute_import
+
+import re
 from collections import OrderedDict
 from nipype.interfaces.base import traits
 

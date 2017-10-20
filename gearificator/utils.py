@@ -5,7 +5,7 @@ from os.path import (
     join as opj,
 )
 
-from . import get_logger()
+from . import get_logger
 lgr = get_logger('utils')
 
 

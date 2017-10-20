@@ -18,7 +18,7 @@ from gearificator.consts import (
 )
 from gearificator.exceptions import UnknownBackend
 
-from gearificator.runtime.base import load_interface_from_manifest
+from gearificator.run import load_interface_from_manifest
 
 lgr = get_logger('main')
 """
@@ -107,7 +107,12 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={}):
     build_cmd = ['docker', 'build', '-t', docker_image, '.']
     print(build_cmd)
     popen = Popen(build_cmd, cwd=outdir)
-    popen.wait()
+    res = popen.wait()
+    if res:
+        raise RuntimeError(
+            "Failed to build docker image: exit code was %d"
+            % res
+        )
     gear_spec['docker_build_stdout'] = 'TODO'
     gear_spec['docker_build_stderr'] = 'TODO'
     return gear_spec
@@ -180,7 +185,7 @@ def create_run(fname):
 #
 # All needed information should be specified via manifest.conf and config.json .
 
-from gearificator.runtime import main
+from gearificator.run import main
 
 if __name__ == '__main__':  # all Python folks like that
     main()

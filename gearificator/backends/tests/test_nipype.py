@@ -1,7 +1,7 @@
 import os
 from os.path import join as opj
 
-from gearificator.runtime.base import load_interface_from_manifest
+from gearificator.run import load_interface_from_manifest
 from gearificator.main import create_gear
 
 def test_ants(tmpdir):
@@ -10,7 +10,9 @@ def test_ants(tmpdir):
     import json
 
     outdir = '/tmp/gearificator_output'
+    #outdir = str(tmpdir)
 
+    print("output dir: %s" % outdir)
     gear_spec = create_gear(
         ANTS,
         outdir,
