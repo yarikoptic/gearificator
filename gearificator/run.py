@@ -107,8 +107,7 @@ def main():
 
     # tricky ones, yet to handle
     # probably analyze what inputs are present, and assign correspondingly
-    # import pdb; pdb.set_trace()
-    for input_, input_params in inputs:
+    for input_, input_params in inputs.items():
         input_dir = opj(indir, input_)
         filenames = None
         if exists(input_dir):

@@ -22,9 +22,9 @@ def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
       Callable (typically just a type, e.g. `int`) to convert
       value from possible str etc
     """
-    rec = OrderedDict({'type': gear_type})
+    rec = OrderedDict({'type': gear_type} if gear_type else {})
     rec.update(kwargs)
-    rec['description'] = trait.desc if trait.dec else ''
+    rec['description'] = trait.desc if trait.desc else ''
     # rec['description'] = trait.get_help()
     if default is not None:
         rec['default'] = default
@@ -32,12 +32,14 @@ def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
         if trait.default_kind != 'value':
             lgr.warning("Not implemented for default_kind=%s",
                         trait.default_kind)
-        rec['default'] = cast(trait.default)
+        trait_default = cast(trait.default)
+        if trait_default:
+            rec['default'] = trait_default
 
     if 'default' in rec:
         rec['description'] += ' [default=%s]' % rec['default']
 
-    if not rec.get('mandatory'):
+    if not trait.mandatory and not rec.get('mandatory'):
         rec['optional'] = True
     # Nipype
     #  requires?
@@ -89,8 +91,16 @@ def Enum(trait, **kwargs):
 
 
 def InputMultiPath(trait, **kwargs):
-    #import pdb; pdb.set_trace()
-    pass
+    inner_trait_types = {t.trait_type for t in trait.inner_traits}
+    if len(inner_trait_types) == 1:
+        inner_type = inner_trait_types.pop()
+        # and we for now assume that one is enough!
+        rec = _get_rec(None, trait, **kwargs)
+        rec['base'] = 'file'
+        rec['type'] = {'enum': 'nifti'}  # TODO: flexible types etc
+    else:
+        raise ValueError("Do not know how to deal with InputMultiPath having multiple types")
+    return rec
 
 # nipype.interfaces.base
 def Str(trait, **kwargs):

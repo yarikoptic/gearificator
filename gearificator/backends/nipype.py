@@ -101,6 +101,7 @@ def analyze_spec(spec_cls, defaults={}):
             lgr.warning("Handler returned None for %s", trait)
         else:
             (inputs if trait_handler in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
+            #(inputs if trait_handler in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
     return config, inputs
 
 
