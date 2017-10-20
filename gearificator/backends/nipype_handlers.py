@@ -78,7 +78,8 @@ def Enum(trait, **kwargs):
         base_type = value_type.__name__  # TODO -- deduce type
         # apply some mappings
         base_type = {
-            'unicode': 'string'
+            'unicode': 'string',
+            'int': 'integer',
         }.get(base_type, base_type)
         rec = _get_rec(base_type, trait, **kwargs)
         # for inputs, we have 'base' to be 'file' or 'api-key', and then

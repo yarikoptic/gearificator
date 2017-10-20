@@ -90,7 +90,7 @@ mriqc/run:INPUT_DIR=$FLYWHEEL_BASE/input/nifti
 
 so could be all over?   nah -- matches the names of inputs.  outputs are indeed a "wild card"
 
-* TODO "License" field should allow for the list
+* "License" field should allow for the list -- 
 
 Unlikely any particular gear is covered by a single license...
 Hard to say where to define the boundary -- since any gear probably carries/uses
@@ -98,13 +98,13 @@ lots of different pieces.  So what kind of a license should be mentioned? of the
 underlying piece or my idea what my work in construction of the gear is licensed
 under?
 
-* TODO  could "name" contain upper case, why not?
+* could "name" contain upper case, why not?
 
-* TODO  enum difficulties
+* enum difficulties
 
 ** schema seems to be different between inputs and config
 
-inputs:
+inputs: 
 
 fsl-feat/manifest.json-    "NIFTI": {
 fsl-feat/manifest.json-      "description": "Anatomical NIfTI image, or multi-channel set of images, to be segmented.",
@@ -128,7 +128,7 @@ mriqc/manifest.json-        "T1w",
 mriqc/manifest.json-        "T2w"
 mriqc/manifest.json-      ]
 
-** could it be for ints at all?
+** could it be for ints at all?   had to be  "integer" but there is more to it
 
     def validate(self, *args, **kwargs):
         for error in self.iter_errors(*args, **kwargs):
@@ -149,4 +149,6 @@ E                u'type': u'int'}
 
 * TODO  example of jq query to get all enums in config or inputs?
 
-* TODO "official" way to mount things -- separately for config.json, inputs, and outputs?
+*  "official" way to mount things -- separately for config.json, inputs, and outputs?
+
+  officially there is v0/input and v0/output (no s)
