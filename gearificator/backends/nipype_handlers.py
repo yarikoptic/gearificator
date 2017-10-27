@@ -98,7 +98,7 @@ def InputMultiPath(trait, **kwargs):
         # and we for now assume that one is enough!
         rec = _get_rec(None, trait, **kwargs)
         rec['base'] = 'file'
-        rec['type'] = {'enum': 'nifti'}  # TODO: flexible types etc
+        rec['type'] = {'enum': ['nifti']}  # TODO: flexible types etc
     else:
         raise ValueError("Do not know how to deal with InputMultiPath having multiple types")
     return rec

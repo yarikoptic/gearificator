@@ -39,7 +39,7 @@ lgr = get_logger('main')
 """
 def create_gear(obj, outdir, manifest_fields={}, defaults={},
                 build_docker=True,
-                validate=False):
+                validate=True):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
