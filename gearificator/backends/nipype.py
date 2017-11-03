@@ -76,15 +76,14 @@ def analyze_spec(spec_cls, defaults={}):
             'terminal_output',
         }:
             continue
-        trait_type_class = trait.trait_type.__class__
-        trait_type = trait_type_class.__name__
-        # strip/change prefixes
-        trait_handler = trait_type.replace('traits.trait_types.', '')
-        trait_handler = trait_handler.replace('nipype.interfaces.base.', 'nipype_')
-        handler = getattr(nipype_handlers, trait_handler, None)
-        if handler is None:
-            lgr.warning("No handler for %s of %s (%s)", opt, trait_type_class, trait_handler)
+        try:
+            handler, handler_name = get_trait_handler(trait)
+        except ValueError as exc:
+            lgr.warning("No handler for %s: %s", opt, exc)
             continue
+        if not handler:
+            continue
+
         trait_rec = handler(trait, default=defaults.get(opt))
         if trait_rec:
             desc = trait_rec.get('description')
@@ -100,9 +99,26 @@ def analyze_spec(spec_cls, defaults={}):
         if trait_rec is None:
             lgr.warning("Handler returned None for %s", trait)
         else:
-            (inputs if trait_handler in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
-            #(inputs if trait_handler in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
+            (inputs
+             if handler_name in {'File', 'InputMultiPath'}
+             else config
+             )[opt] = trait_rec
+            #(inputs if handler_name in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
     return config, inputs
+
+
+def get_trait_handler(trait):
+    """Given a trait, return a handler and its name
+    """
+    trait_type_class = trait.trait_type.__class__
+    trait_type = trait_type_class.__name__
+    # strip/change prefixes
+    handler_name = trait_type.replace('traits.trait_types.', '')
+    handler_name = handler_name.replace('nipype.interfaces.base.', 'nipype_')
+    handler = getattr(nipype_handlers, handler_name, None)
+    if not handler:
+        raise ValueError("No handler for %s" % handler_name)
+    return handler, handler_name
 
 
 def extract_manifest(cls, defaults={}):

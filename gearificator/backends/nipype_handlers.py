@@ -91,6 +91,21 @@ def Enum(trait, **kwargs):
     return rec
 
 
+def List(trait, **kwargs):
+    if len(trait.inner_traits) != 1:
+        raise ValueError(
+            "Don't know yet how to treat a List trait with multiple types: %s"
+            % trait.inner_traits
+        )
+    from .nipype import get_trait_handler
+    inner_trait = trait.inner_traits[0]
+    inner_handler, inner_handler_name = get_trait_handler(inner_trait)
+    rec_inner = inner_handler(inner_trait)   # we care only about "type" here actually
+    rec = _get_rec('array', trait, **kwargs)
+    rec['items'] = {'type': rec_inner['type']}
+    return rec
+
+
 def InputMultiPath(trait, **kwargs):
     inner_trait_types = {t.trait_type for t in trait.inner_traits}
     if len(inner_trait_types) == 1:
