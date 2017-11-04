@@ -29,12 +29,16 @@ def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
     if default is not None:
         rec['default'] = default
     elif trait.default is not None:
-        if trait.default_kind != 'value':
+        if trait.default_kind == 'list' and trait.default == []:
+            # just nothing for now
+            pass
+        elif trait.default_kind != 'value':
             lgr.warning("Not implemented for default_kind=%s",
                         trait.default_kind)
-        trait_default = cast(trait.default)
-        if trait_default:
-            rec['default'] = trait_default
+        else:
+            trait_default = cast(trait.default)
+            if trait_default:
+                rec['default'] = trait_default
 
     if 'default' in rec:
         rec['description'] += ' [default=%s]' % rec['default']

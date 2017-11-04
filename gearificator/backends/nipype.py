@@ -70,10 +70,12 @@ def analyze_spec(spec_cls, defaults={}):
     inputs = OrderedDict()
     for opt, trait in spec.items():
         # We better skip some, at least for now,
-        # TODO: some might be specific to interfaces
+        # TODO: some might be specific to interfaces or too generic for which
+        # we do not care to expose in the gear ATM
         if opt in {
             'ignore_exception',
             'terminal_output',
+            'environ',
         }:
             continue
         try:

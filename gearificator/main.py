@@ -121,7 +121,7 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
             )
         gear_spec['docker_build_stdout'] = 'TODO'
         gear_spec['docker_build_stderr'] = 'TODO'
-        return gear_spec
+    return gear_spec
 
 
 def create_dockerfile(fname, base_image, deb_packages=[], pip_packages=[]):

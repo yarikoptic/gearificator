@@ -62,9 +62,7 @@ def load_interface(module_cls):
 def load_interface_from_manifest(j):
     """Load the manifest.json and extract the interface definition
     """
-    if isinstance(j, string_types):
-        # must be a filename
-        j = load_json(j)
+    j = get_manifest(j)
     try:
         module_cls = j['custom'][MANIFEST_CUSTOM_SECTION][MANIFEST_CUSTOM_INTERFACE]
     except Exception:
@@ -73,38 +71,78 @@ def load_interface_from_manifest(j):
     return load_interface(module_cls)
 
 
+def get_manifest(j):
+    """Just loads manifest from a file if string provided"""
+    if isinstance(j, string_types):
+        # must be a filename
+        j = load_json(j)
+    return j
+
+
 def errorout(msg, exitcode=1):
     """Report Error and exit with non-0"""
     lgr.error(msg)
     sys.exit(exitcode)
 
 
-def main():
-    """The main "executioner" """
+# TODO: this one is nipype specific -- so we might want to move it into nipype
+def run(manifest, config, indir, outdir):
+    """Given manifest, config, indir and outdir perform the execution
 
-    topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
-    indir = opj(topdir, 'input')
-    outdir = opj(topdir, 'output')
+    Parameters
+    ----------
+    manifest
+    config
+    indir
+    outdir
 
-    # Paranoia
+    Returns
+    -------
+
+    """
+    interface = get_interface(manifest, config, indir, outdir)
+
+    try:
+        out = interface.run()
+    except Exception as exc:
+        lgr.error("Error while running %s: %s",
+                  interface, exc)
+    finally:
+        # Should we clean up anything??  may be some workdir
+        pass
+
+    # Handle outputs
+    # Check if anything under outdir
+    # TODO: ATM only flat
     outputs = glob(opj(outdir, '*'))
-    if outputs:
-        errorout(
-            "Yarik expected no outputs being present in output dir. Got: %s"
-            % ', '.join(outputs)
-        )
+    if not outputs:
+        errorout("Yarik expected some outputs, got nothing")
 
-    # Load interface
-    manifest = load_json(opj(topdir, MANIFEST_FILENAME))
-    config = load_json(opj(topdir, CONFIG_FILENAME)).get('config', {})
+        # But there is may be nothing really todo in our case?
+        # May be some other interfaces would want to do something custom, we will
+        # just save results
 
+
+def get_interface(manifest, config, indir, outdir):
+    """Load/parametrize and return the interface given the spec
+
+    Parameters
+    ----------
+    manifest
+    config
+    indir
+    outdir
+
+    Returns
+    -------
+
+    """
+    manifest = get_manifest(manifest)
     interface_cls = load_interface_from_manifest(manifest)
     interface = interface_cls()
-
     # Parametrize it with configuration options
     inputs = manifest.get('inputs', {})
     manifest_config = manifest.get('config', {})
-
     # tricky ones, yet to handle
     # probably analyze what inputs are present, and assign correspondingly
     for input_, input_params in inputs.items():
@@ -143,25 +181,27 @@ def main():
     # Now we need to get through the outputs!
     # flywheel does not yet provide options to specify outputs, so we
     # will stick them into custom:gearificator-outputs
-    #interface.inputs.out_file = opj(outdir, "TODO")
+    # interface.inputs.out_file = opj(outdir, "TODO")
+    return interface
 
-    try:
-        out = interface.run()
-    except Exception as exc:
-        lgr.error("Error while running %s: %s",
-                  interface_cls, exc)
-    finally:
-        # Should we clean up anything??  may be some workdir
-        pass
 
-    # Handle outputs
+def main():
+    """The main "executioner" """
 
-    # Check if anything under outdir
-    # TODO: ATM only flat
+    topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
+    indir = opj(topdir, 'input')
+    outdir = opj(topdir, 'output')
+
+    # Paranoia
     outputs = glob(opj(outdir, '*'))
-    if not outputs:
-        errorout("Yarik expected some outputs, got nothing")
+    if outputs:
+        errorout(
+            "Yarik expected no outputs being present in output dir. Got: %s"
+            % ', '.join(outputs)
+        )
 
-        # But there is may be nothing really todo in our case?
-        # May be some other interfaces would want to do something custom, we will
-        # just save results
+    # Load interface
+    manifest = load_json(opj(topdir, MANIFEST_FILENAME))
+    config = load_json(opj(topdir, CONFIG_FILENAME)).get('config', {})
+
+    return run(manifest, config, indir, outdir)

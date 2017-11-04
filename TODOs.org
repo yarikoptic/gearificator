@@ -147,8 +147,10 @@ E                u'optional': True,
 E                u'type': u'int'}
 
 
-* TODO  example of jq query to get all enums in config or inputs?
+* TODOREMAINS  example of jq query to get all enums in config or inputs?
 
 *  "official" way to mount things -- separately for config.json, inputs, and outputs?
 
   officially there is v0/input and v0/output (no s)
+
+* TODO List handling.   will not specify default empty []
