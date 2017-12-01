@@ -1,9 +1,17 @@
-Generator of Flywheel Gears 
+# Generator of Flywheel Gears 
+
+
+![gearificator logo](doc/images/gearificator-logo.png)
 
 Currently intends to provide gearification of some interfaces and
 pipelines provided by Nipype 
 
-Lots of TODOs
+TODOs
+-----
+
+Lots of TODOs, but primary target(s):
+- nipype
+  - [ ] ANTs interfaces
 
 LICENSE
 -------
