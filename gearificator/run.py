@@ -40,11 +40,15 @@ from gearificator import get_logger
 from gearificator.consts import (
     # MANIFEST_BACKEND_FIELD,
     MANIFEST_CUSTOM_SECTION,
+    MANIFEST_CUSTOM_OUTPUTS,
     MANIFEST_CUSTOM_INTERFACE,
     MANIFEST_FILENAME,
     CONFIG_FILENAME,
 )
-from gearificator.utils import load_json
+from gearificator.utils import (
+    load_json,
+    chpwd,
+)
 
 lgr = get_logger('runtime')
 lgr.setLevel(10)  # DEBUG
@@ -100,10 +104,17 @@ def run(manifest, config, indir, outdir):
     -------
 
     """
-    interface = get_interface(manifest, config, indir, outdir)
-
+    # should we wrap it into a node?
+    # it has .base_dir specification
     try:
-        out = interface.run()
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)  # assure that exists
+        # output filename might be generated relative to PWD (e.g. in fsl BET)
+        # so we better cd to outdir while generating the interface
+        # and for the sake of it while running
+        with chpwd(outdir):
+            interface = get_interface(manifest, config, indir, outdir)
+            out = interface.run()
     except Exception as exc:
         lgr.error("Error while running %s: %s",
                   interface, exc)
@@ -117,7 +128,6 @@ def run(manifest, config, indir, outdir):
     outputs = glob(opj(outdir, '*'))
     if not outputs:
         errorout("Yarik expected some outputs, got nothing")
-
         # But there is may be nothing really todo in our case?
         # May be some other interfaces would want to do something custom, we will
         # just save results
@@ -139,7 +149,8 @@ def get_interface(manifest, config, indir, outdir):
     """
     manifest = get_manifest(manifest)
     interface_cls = load_interface_from_manifest(manifest)
-    interface = interface_cls()
+    # Prepare all kwargs to initialize that class instance
+    kwargs = {}
     # Parametrize it with configuration options
     inputs = manifest.get('inputs', {})
     manifest_config = manifest.get('config', {})
@@ -159,29 +170,42 @@ def get_interface(manifest, config, indir, outdir):
                 # same run.  Is it practiced in any gear?
             elif len(filenames) == 1:
                 filename = filenames[0]
-                setattr(interface.inputs, input_, filename)
+                kwargs[input_] = filename
         if not filenames:
-            lgr.warning("No input for %s was provided", input_)
+            if not input_params.get('optional', False):
+                lgr.warning("No input for %s was provided", input_)
 
     # We do need to pass defaults from manifest since we might have
     # provided custom ones
     for c, v in manifest_config.items():
         if 'default' in v:
-            setattr(interface.inputs, c, v['default'])
+            kwargs[c] = v['default']
 
     # Further configuration
     for c, v in config.items():
-        if c not in inputs:
-            lgr.warning(
-                "%s is not known to inputs, which know only about %s",
-                c, inputs.keys()
-            )
-        setattr(interface.inputs, c, v)
+        # could be a config item
+        # if c not in inputs:
+        #     lgr.warning(
+        #         "%s is not known to inputs, which know only about %s",
+        #         c, inputs.keys()
+        #     )
+        kwargs[c] = v
+
+    interface = interface_cls(**kwargs)
 
     # Now we need to get through the outputs!
     # flywheel does not yet provide options to specify outputs, so we
-    # will stick them into custom:gearificator-outputs
-    # interface.inputs.out_file = opj(outdir, "TODO")
+    # will stick them into custom:gearificator-outputs but do we need them?
+    # # interface.inputs.out_file = opj(outdir, "TODO")
+    # for out in manifest.get(
+    #         'custom', {}).get(
+    #         MANIFEST_CUSTOM_SECTION, {}).get(
+    #         MANIFEST_CUSTOM_OUTPUTS, {}):
+    #     # we have no clue about extension! TODO
+    #     setattr(interface.outputs, out, os.path.join(outdir, out))
+
+    # TODO: but we need to configure what is the working directory to be
+    # the outputs directory so anything generated would fall in there
     return interface
 
 

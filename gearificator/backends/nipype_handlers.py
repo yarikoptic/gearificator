@@ -115,13 +115,20 @@ def InputMultiPath(trait, **kwargs):
     if len(inner_trait_types) == 1:
         inner_type = inner_trait_types.pop()
         # and we for now assume that one is enough!
-        rec = _get_rec(None, trait, **kwargs)
-        rec['base'] = 'file'
-        rec['type'] = {'enum': ['nifti']}  # TODO: flexible types etc
+        rec = File(trait, **kwargs)
     else:
         raise ValueError("Do not know how to deal with InputMultiPath having multiple types")
     return rec
 
+
+def File(trait, **kwargs):
+    rec = _get_rec(None, trait, **kwargs)
+    rec['base'] = 'file'
+    # rec['type'] = {'enum': ['nifti']}  # TODO: flexible types etc
+    return rec
+
+
 # nipype.interfaces.base
 def Str(trait, **kwargs):
-    return _get_rec('string', trait, **kwargs)
+    rec = _get_rec(None, trait, **kwargs)
+    rec['base'] = File

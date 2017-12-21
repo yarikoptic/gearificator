@@ -99,7 +99,7 @@ def analyze_spec(spec_cls, defaults={}):
                     new_desc += desc
                 trait_rec['description'] = new_desc
         if trait_rec is None:
-            lgr.warning("Handler returned None for %s", trait)
+            lgr.warning("Handler returned None for %s of trait %s", opt, trait)
         else:
             (inputs
              if handler_name in {'File', 'InputMultiPath'}
@@ -139,20 +139,34 @@ def extract_manifest(cls, defaults={}):
     config, inputs = analyze_spec(cls.input_spec, defaults=defaults)
     #  Not yet sure if actually needed right here since outputs are not
     #  part of the manifest
-    # output_spec = analyze_spec(cls.output_spec)
-
+    config_out, outputs = analyze_spec(cls.output_spec, defaults=defaults)
+    assert not config_out, "expecting only files in the output, not config settings"
+    # strip outputs of unneeded fields
+    # may be eventually we would bring some back
+    for v in outputs.values():
+        for f in 'base', 'optional':
+            v.pop(f, None)
+    # TODO: in some cases outputs might have the same field as
+    # declared in inputs (e.g. 'out_file' in BET). How do we deal with it?
+    # One way is at the run time, in case user specified that one,
+    # we use it somehow
     manifest = OrderedDict()
 
+    manifest['author'] = None
     manifest['name'] = cls.__name__.lower()
     # TODO: fill out what we could about stuff
     # TODO: 'custom':'docker-image'
+    #manifest['author'] = 'Some authors, possibly from a recipe/API'
+    #manifest['description'] = 'Some description, e.g. %s' % cls.__doc__
+    cls_doc = getattr(cls, '__doc__')
+    if cls_doc:
+        # take the first line as a description
+        manifest['description'] = cls_doc.split('\n')[0]
 
     manifest['config'] = config or {}
     manifest['inputs'] = inputs or {}
 
     manifest['url'] = "http://nipype.readthedocs.io/en/%s/interfaces/generated/interfaces.ants/registration.html" % nipype.__version__
     # TODO:  license -- we should add the license for the piece?
-    #manifest['author'] = 'Some authors, possibly from a recipe/API'
-    #manifest['description'] = 'Some description, e.g. %s' % cls.__doc__
 
-    return manifest
+    return manifest, outputs

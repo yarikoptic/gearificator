@@ -39,7 +39,9 @@ lgr = get_logger('main')
 """
 def create_gear(obj, outdir, manifest_fields={}, defaults={},
                 build_docker=True,
-                validate=True):
+                validate=True,
+                deb_packages=[],
+                pip_packages=[]):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
@@ -61,19 +63,20 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
         backend.get_version() if hasattr(backend, 'get_version') else ''
     )
 
-    name = manifest_fields['name']
+    manifest, outputs = backend.extract_manifest(obj, defaults=defaults)
+    if version:
+        manifest['version'] = version
+    manifest.update(manifest_fields)
+    name = manifest['name']
 
-    manifest = manifest_fields.copy()
-    manifest['version'] = version
-    manifest.update(backend.extract_manifest(obj, defaults=defaults))
     gear_spec['manifest'] = manifest
     # Store our custom settings
     if 'custom' not in manifest:
         manifest['custom'] = {}
     custom = manifest['custom']
-    custom[MANIFEST_CUSTOM_SECTION] = gcustom = {
+    custom[MANIFEST_CUSTOM_SECTION] = {
         MANIFEST_CUSTOM_INTERFACE: '%s:%s' % (obj.__module__, obj.__name__),
-        MANIFEST_CUSTOM_OUTPUTS: {}  # TODO
+        MANIFEST_CUSTOM_OUTPUTS: outputs or {}
     }
 
     docker_image = custom.get('docker_image')
@@ -103,8 +106,8 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     gear_spec['Dockerfile'] = create_dockerfile(
         os.path.join(outdir, "Dockerfile"),
         base_image=getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
-        deb_packages=getattr(backend, 'DEB_PACKAGES', []),
-        pip_packages=getattr(backend, 'PIP_PACKAGES', [])
+        deb_packages=getattr(backend, 'DEB_PACKAGES', []) + deb_packages,
+        pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages
     )
 
     if build_docker:

@@ -1,14 +1,29 @@
+import json
 import os
 from os.path import join as opj
+from pprint import pprint
 
 from gearificator.run import load_interface_from_manifest
 from gearificator.main import create_gear
+from gearificator.utils import chpwd
+
+
+def create_sample_nifti(fname, shape=(32, 32, 32), affine=None):
+    import nibabel as nib
+    import numpy as np
+    if not affine:
+        affine = np.eye(len(shape)+1) * 3  # a simple one
+        affine[-1, -1] = 1
+    ni = nib.Nifti1Image(np.random.normal(1000, 1000, shape), affine)
+    dirname = os.path.dirname(fname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    ni.to_filename(fname)
+    return ni
 
 
 def test_ants(tmpdir):
     from nipype.interfaces.ants.registration import ANTS, Registration
-    from pprint import pprint
-    import json
 
     tmpdir = '/tmp/gearificator_output'
     #geardir = str(tmpdir)
@@ -85,3 +100,69 @@ def test_ants(tmpdir):
 "--number-of-iterations 50x35x15 --output-naming out " \
 "--regularization Gauss[3.0,0.0] --transformation-model SyN " \
 "--use-Histogram-Matching 0" % config
+
+
+def test_fsl_bet(tmpdir):
+    from nipype.interfaces.fsl.preprocess import BET
+
+    tmpdir = '/tmp/gearificator_output'
+    if os.path.exists(tmpdir):
+        import shutil
+        shutil.rmtree(tmpdir)
+    #geardir = str(tmpdir)
+    geardir = opj(tmpdir, 'gear')
+    indir = opj(tmpdir, 'inputs')
+    outdir = opj(tmpdir, 'outputs')
+    for d in geardir, indir, outdir:
+        if not os.path.exists(d):
+            os.makedirs(d)
+
+    print("output dir: %s" % tmpdir)
+    class_ = BET
+    gear_spec = create_gear(
+        class_,
+        geardir,
+        # Additional fields for the
+        manifest_fields=dict(
+            author="Yaroslav O. Halchenko",
+            license='Other',  # BSD-3-Clause + FSL license (non-commercial)',
+            maintainer="Yaroslav O. Halchenko <debian@onerussian.com>",
+            name="nipype-fsl-bet",
+            label="FSL BET (Brain Extraction Tool)",
+            source="https://github.com/yarikoptic/gearificator",  # URL to the gearificator? or we will publish a generated collection somewhere?
+        ),
+        defaults=dict(
+            output_type='NIFTI_GZ',
+        ),
+        build_docker=False
+    )
+    #print(json.dumps(gear_spec, indent=2))
+
+    manifest_file = opj(geardir, 'manifest.json')
+    interface = load_interface_from_manifest(manifest_file)
+    assert interface is class_
+
+    from gearificator.run import get_interface
+    config = {
+        'in_file': opj(indir, "in_file", "fixed.nii.gz"),
+        # "cheating" -- the problem is that
+        # nipype would operate from cwd while composing the output
+        # filename if not specified, so in run we actually can do that
+        # but can't do here since output dir does not necessarily exist
+        'out_file': opj(outdir, "fixed_BRAIN.nii.gz"),
+        'skull': True,
+    }
+    create_sample_nifti(config['in_file'])
+    interface = get_interface(manifest_file, config, indir, outdir)
+    cmdline = interface.cmdline
+    assert "undefined" not in cmdline
+    assert cmdline == "bet %(in_file)s %(out_file)s -s" \
+           % (config)
+
+    config.pop('out_file')
+    with chpwd(outdir):
+        interface = get_interface(manifest_file, config, indir, outdir)
+        cmdline = interface.cmdline
+        assert "undefined" not in cmdline
+        assert cmdline == "bet %s %s -s" \
+               % (config['in_file'], opj(outdir, "fixed_brain.nii.gz"))
