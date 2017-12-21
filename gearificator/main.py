@@ -41,7 +41,9 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
                 build_docker=True,
                 validate=True,
                 deb_packages=[],
-                pip_packages=[]):
+                pip_packages=[],
+                source_files=[]
+                ):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
@@ -68,6 +70,10 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
         manifest['version'] = version
     manifest.update(manifest_fields)
     name = manifest['name']
+    # Filter out undefined which were added just for consistent order
+    for f in manifest:
+        if manifest[f] is None:
+            manifest.pop(f)
 
     gear_spec['manifest'] = manifest
     # Store our custom settings
@@ -100,14 +106,17 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     assert interface is obj
 
     # TODO: create run
-    gear_spec['run'] = create_run(os.path.join(outdir, 'run'))
+    gear_spec['run'] = create_run(
+        os.path.join(outdir, 'run'),
+        source_files=source_files,
+    )
 
     # Create a dedicated Dockerfile
     gear_spec['Dockerfile'] = create_dockerfile(
         os.path.join(outdir, "Dockerfile"),
         base_image=getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
         deb_packages=getattr(backend, 'DEB_PACKAGES', []) + deb_packages,
-        pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages
+        pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages,
     )
 
     if build_docker:
@@ -140,6 +149,7 @@ def create_dockerfile(fname, base_image, deb_packages=[], pip_packages=[]):
 FROM %(base_image)s
 MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
 
+# TODO: use snapshots for reproducible image!
 # Install additional APT mirror for NeuroDebian for better availability/resilience
 RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
 RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
@@ -185,20 +195,23 @@ ENTRYPOINT ["/flywheel/v0/run"]
     return content
 
 
-def create_run(fname):
+def create_run(fname, source_files):
     """Create the mighty "run" file which would be exactly the same in all of them
     """
     content = """\
-#!/usr/bin/env python
+#!/bin/sh
 # Just a simple runner for the gearificator'ed interface.
 #
-# All needed information should be specified via manifest.conf and config.json .
+# All needed information should be specified via manifest.conf and config.json 
 
-from gearificator.run import main
-
-if __name__ == '__main__':  # all Python folks like that
-    main()
+set -eu
 """
+    if source_files:
+        for f in source_files:
+            content += 'source %s\n' % f
+
+    # Finally actually run the thing
+    content += "python -m gearificator.run\n"
     with open(fname, 'w') as f:
         f.write(content)
     # make it executable

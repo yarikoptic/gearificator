@@ -152,8 +152,10 @@ def extract_manifest(cls, defaults={}):
     # we use it somehow
     manifest = OrderedDict()
 
-    manifest['author'] = None
-    manifest['name'] = cls.__name__.lower()
+    # None values are placeholders so we could mandate a sane order of those
+    # fields
+    manifest['name'] = ('%s.%s' % (cls.__module__, cls.__name__)).lower().replace('.', '-')
+    manifest['label'] = None
     # TODO: fill out what we could about stuff
     # TODO: 'custom':'docker-image'
     #manifest['author'] = 'Some authors, possibly from a recipe/API'
@@ -162,6 +164,10 @@ def extract_manifest(cls, defaults={}):
     if cls_doc:
         # take the first line as a description
         manifest['description'] = cls_doc.split('\n')[0]
+    manifest['author'] = None
+    manifest['maintainer'] = None
+    manifest['license'] = None
+    manifest['version'] = None
 
     manifest['config'] = config or {}
     manifest['inputs'] = inputs or {}

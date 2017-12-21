@@ -22,6 +22,14 @@ def create_sample_nifti(fname, shape=(32, 32, 32), affine=None):
     return ni
 
 
+def create_config(filename, **config):
+    import json
+    out_config = {'config': config}
+    with open(opj(filename, 'config.json'), 'w') as f:
+        json.dump(out_config, f, indent=2)
+    return config
+
+
 def test_ants(tmpdir):
     from nipype.interfaces.ants.registration import ANTS, Registration
 
@@ -110,7 +118,7 @@ def test_fsl_bet(tmpdir):
         import shutil
         shutil.rmtree(tmpdir)
     #geardir = str(tmpdir)
-    geardir = opj(tmpdir, 'gear')
+    geardir = tmpdir
     indir = opj(tmpdir, 'inputs')
     outdir = opj(tmpdir, 'outputs')
     for d in geardir, indir, outdir:
@@ -127,13 +135,15 @@ def test_fsl_bet(tmpdir):
             author="Yaroslav O. Halchenko",
             license='Other',  # BSD-3-Clause + FSL license (non-commercial)',
             maintainer="Yaroslav O. Halchenko <debian@onerussian.com>",
-            name="nipype-fsl-bet",
+            # name="nipype-fsl-bet",
             label="FSL BET (Brain Extraction Tool)",
             source="https://github.com/yarikoptic/gearificator",  # URL to the gearificator? or we will publish a generated collection somewhere?
         ),
         defaults=dict(
             output_type='NIFTI_GZ',
         ),
+        deb_packages=['fsl-core'],
+        source_files=['/etc/fsl/fsl.sh'],
         build_docker=False
     )
     #print(json.dumps(gear_spec, indent=2))
@@ -143,15 +153,16 @@ def test_fsl_bet(tmpdir):
     assert interface is class_
 
     from gearificator.run import get_interface
-    config = {
-        'in_file': opj(indir, "in_file", "fixed.nii.gz"),
+
+    config = create_config(geardir,
+        in_file = opj(indir, "in_file", "fixed.nii.gz"),
         # "cheating" -- the problem is that
         # nipype would operate from cwd while composing the output
         # filename if not specified, so in run we actually can do that
         # but can't do here since output dir does not necessarily exist
-        'out_file': opj(outdir, "fixed_BRAIN.nii.gz"),
-        'skull': True,
-    }
+        out_file=opj(outdir, "fixed_BRAIN.nii.gz"),
+        skull=True,
+    )
     create_sample_nifti(config['in_file'])
     interface = get_interface(manifest_file, config, indir, outdir)
     cmdline = interface.cmdline
