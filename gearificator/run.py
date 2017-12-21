@@ -213,7 +213,7 @@ def main(*args, **kwargs):
     """The main "executioner" """
 
     topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
-    indir = opj(topdir, 'input')
+    indir = opj(topdir, 'inputs')
     outdir = opj(topdir, 'output')
 
     # Paranoia
@@ -226,6 +226,7 @@ def main(*args, **kwargs):
 
     # Load interface
     manifest = load_json(opj(topdir, MANIFEST_FILENAME))
-    config = load_json(opj(topdir, CONFIG_FILENAME)).get('config', {})
+    config_file = opj(topdir, CONFIG_FILENAME)
+    config = load_json(config_file).get('config', {}) if os.path.exists(config_file) else {}
 
     return run(manifest, config, indir, outdir)
