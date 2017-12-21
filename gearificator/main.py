@@ -39,7 +39,11 @@ lgr = get_logger('main')
 """
 def create_gear(obj, outdir, manifest_fields={}, defaults={},
                 build_docker=True,
-                validate=True):
+                validate=True,
+                deb_packages=[],
+                pip_packages=[],
+                source_files=[]
+                ):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
 
@@ -61,19 +65,24 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
         backend.get_version() if hasattr(backend, 'get_version') else ''
     )
 
-    name = manifest_fields['name']
+    manifest, outputs = backend.extract_manifest(obj, defaults=defaults)
+    if version:
+        manifest['version'] = version
+    manifest.update(manifest_fields)
+    name = manifest['name']
+    # Filter out undefined which were added just for consistent order
+    for f in manifest:
+        if manifest[f] is None:
+            manifest.pop(f)
 
-    manifest = manifest_fields.copy()
-    manifest['version'] = version
-    manifest.update(backend.extract_manifest(obj, defaults=defaults))
     gear_spec['manifest'] = manifest
     # Store our custom settings
     if 'custom' not in manifest:
         manifest['custom'] = {}
     custom = manifest['custom']
-    custom[MANIFEST_CUSTOM_SECTION] = gcustom = {
+    custom[MANIFEST_CUSTOM_SECTION] = {
         MANIFEST_CUSTOM_INTERFACE: '%s:%s' % (obj.__module__, obj.__name__),
-        MANIFEST_CUSTOM_OUTPUTS: {}  # TODO
+        MANIFEST_CUSTOM_OUTPUTS: outputs or {}
     }
 
     docker_image = custom.get('docker_image')
@@ -97,14 +106,18 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     assert interface is obj
 
     # TODO: create run
-    gear_spec['run'] = create_run(os.path.join(outdir, 'run'))
+    gear_spec['run'] = create_run(
+        os.path.join(outdir, 'run'),
+        source_files=source_files,
+    )
 
     # Create a dedicated Dockerfile
     gear_spec['Dockerfile'] = create_dockerfile(
         os.path.join(outdir, "Dockerfile"),
         base_image=getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
         deb_packages=getattr(backend, 'DEB_PACKAGES', []),
-        pip_packages=getattr(backend, 'PIP_PACKAGES', [])
+        extra_deb_packages = deb_packages,
+        pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages,
     )
 
     if build_docker:
@@ -124,52 +137,56 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     return gear_spec
 
 
-def create_dockerfile(fname, base_image, deb_packages=[], pip_packages=[]):
+def create_dockerfile(fname, base_image, deb_packages=[], extra_deb_packages=[], pip_packages=[]):
     """Create a Dockerfile for the gear
 
     ATM we aren't bothering establishing a common base image. So will rebuild
     entire spec
     """
-    deb_packages = 'python-pip ' + ' '.join(deb_packages)
+
+    deb_packages_line =  ' '.join(deb_packages) if deb_packages else ''
+    extra_deb_packages_line =  'RUN eatmydata apt-get install -y --no-install-recommends ' \
+                               + ' '.join(extra_deb_packages)  if extra_deb_packages else ''
     pip_line = "RUN pip install %s" % (' '.join(pip_packages)) if pip_packages else ''
 
     content = """\
 FROM %(base_image)s
 MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
 
+# TODO: use snapshots for reproducible image!
 # Install additional APT mirror for NeuroDebian for better availability/resilience
 RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
 RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
 
 # To prevent interactive debconf during installations
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y \
-        eatmydata
+RUN apt-get update && \\
+    apt-get install -y eatmydata
 
 # Make directory for flywheel spec (v0)
 # TODO:  gearificator prepare-docker recipename_or_url
 # cons: would somewhat loose cached steps (pre-installation, etc)
 # For now -- entire manual template
-RUN eatmydata apt-get update \
-    && eatmydata apt-get install -y %(deb_packages)s
-
-%(pip_line)s
-
-# Note: both ANTS and antsRegistration are symlinked under /usr/bin so nothing
-# for us to do here with the PATH
-RUN apt-get clean
-ENV FLYWHEEL /flywheel/v0
-RUN mkdir -p ${FLYWHEEL}
+RUN eatmydata apt-get update && \\
+    eatmydata apt-get install -y --no-install-recommends python-pip %(deb_packages_line)s
 
 # Download/Install gearificator suite
 # TODO  install git if we do via git
-RUN eatmydata apt-get install -y git
-RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && \
-    pip install -e /srv/gearificator
+RUN eatmydata apt-get install -y git python-setuptools
+RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator
+RUN pip install -e /srv/gearificator
+
+# Common to all gears settings
+ENV FLYWHEEL /flywheel/v0
+RUN mkdir -p ${FLYWHEEL}
 
 # e.g. Nipype and other pythonish beasts might crash unless 
 ENV LC_ALL C.UTF-8
+
+# Now we do this particular Gear specific installations
+%(extra_deb_packages_line)s
+RUN apt-get clean
+%(pip_line)s
 COPY run ${FLYWHEEL}/run
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
@@ -182,20 +199,23 @@ ENTRYPOINT ["/flywheel/v0/run"]
     return content
 
 
-def create_run(fname):
+def create_run(fname, source_files):
     """Create the mighty "run" file which would be exactly the same in all of them
     """
     content = """\
-#!/usr/bin/env python
+#!/bin/sh
 # Just a simple runner for the gearificator'ed interface.
 #
-# All needed information should be specified via manifest.conf and config.json .
+# All needed information should be specified via manifest.conf and config.json 
 
-from gearificator.run import main
-
-if __name__ == '__main__':  # all Python folks like that
-    main()
+set -eu
 """
+    if source_files:
+        for f in source_files:
+            content += '. %s\n' % f
+
+    # Finally actually run the thing
+    content += "python -m gearificator\n"
     with open(fname, 'w') as f:
         f.write(content)
     # make it executable
