@@ -112,7 +112,7 @@ def test_ants(tmpdir):
 
 
 def test_fsl_bet(tmpdir):
-    from nipype.interfaces.fsl.preprocess import BET
+    from nipype.interfaces.fsl import preprocess
 
     tmpdir = '/tmp/gearificator_output'
     if os.path.exists(tmpdir):
@@ -127,7 +127,7 @@ def test_fsl_bet(tmpdir):
             os.makedirs(d)
 
     print("output dir: %s" % tmpdir)
-    class_ = BET
+    class_ = preprocess.BET # MCFLIRT
     gear_spec = create_gear(
         class_,
         geardir,

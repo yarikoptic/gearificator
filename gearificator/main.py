@@ -173,7 +173,7 @@ RUN eatmydata apt-get update && \\
 # Download/Install gearificator suite
 # TODO  install git if we do via git
 RUN eatmydata apt-get install -y git python-setuptools
-RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo "2"
+RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo "4"
 RUN pip install -e /srv/gearificator
 
 # Common to all gears settings

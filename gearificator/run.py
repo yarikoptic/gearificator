@@ -106,6 +106,7 @@ def run(manifest, config, indir, outdir):
     """
     # should we wrap it into a node?
     # it has .base_dir specification
+    interface = None
     try:
         if not os.path.exists(outdir):
             os.makedirs(outdir)  # assure that exists
@@ -118,6 +119,7 @@ def run(manifest, config, indir, outdir):
     except Exception as exc:
         lgr.error("Error while running %s: %s",
                   interface, exc)
+        raise
     finally:
         # Should we clean up anything??  may be some workdir
         pass
@@ -125,12 +127,13 @@ def run(manifest, config, indir, outdir):
     # Handle outputs
     # Check if anything under outdir
     # TODO: ATM only flat
-    outputs = glob(opj(outdir, '*'))
-    if not outputs:
-        errorout("Yarik expected some outputs, got nothing")
-        # But there is may be nothing really todo in our case?
-        # May be some other interfaces would want to do something custom, we will
-        # just save results
+    # outputs = glob(opj(outdir, '*'))
+    # if not outputs:
+    #     errorout("Yarik expected some outputs, got nothing")
+    #     # But there is may be nothing really todo in our case?
+    #     # May be some other interfaces would want to do something custom, we will
+    #     # just save results
+    return out
 
 
 def get_interface(manifest, config, indir, outdir):
@@ -220,12 +223,11 @@ def main(*args, **kwargs):
     config_file = opj(topdir, CONFIG_FILENAME)
     config = load_json(config_file).get('config', {}) if os.path.exists(config_file) else {}
 
+    print("Manifest:")
+    for k, v in sorted(manifest.items()):
+        if not isinstance(v, (int, tuple, dict)):
+            print(" %s: %s" % (k, v))
     if '--help' in sys.argv:
-        import json
-        print("Manifest:")
-        for k, v in manifest.items():
-            if not isinstance(v, (int, tuple, dict)):
-                print(" %s: %s" % (k, v))
         for c, d in [
             ('Inputs', manifest.get('inputs', {})),
             ('Possible Outputs', manifest.get('custom', {}).get(
@@ -239,11 +241,9 @@ def main(*args, **kwargs):
             print("\n%s" % c)
             for k, v in d.items():
                 print(" %s: %s" % (k, v.get('description', '')))
+                if c in ('Inputs', 'Config') and k in config:
+                    print("  = %s" % config[k])
 
-        if config:
-            print("\nInput config:")
-            for k, v in config.items():
-                print(" %s: %s" % (k, v))
         return
 
     if '--print-manifest' in sys.argv:
@@ -264,4 +264,9 @@ def main(*args, **kwargs):
             % ', '.join(outputs)
         )
 
-    return run(manifest, config, indir, outdir)
+    print('\nRunning')
+    out = run(manifest, config, indir, outdir)
+    # TODO: actually does not include skull file even though it is generated!
+    print("\nOutputs: ")
+    print(out.outputs)  # could be rendered better
+    return out
