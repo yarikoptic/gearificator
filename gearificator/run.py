@@ -211,10 +211,50 @@ def get_interface(manifest, config, indir, outdir):
 
 def main(*args, **kwargs):
     """The main "executioner" """
-
     topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
     indir = opj(topdir, 'inputs')
     outdir = opj(topdir, 'output')
+
+    # Load interface
+    manifest = load_json(opj(topdir, MANIFEST_FILENAME))
+    config_file = opj(topdir, CONFIG_FILENAME)
+    config = load_json(config_file).get('config', {}) if os.path.exists(config_file) else {}
+
+    if '--help' in sys.argv:
+        import json
+        print("Manifest:")
+        for k, v in manifest.items():
+            if not isinstance(v, (int, tuple, dict)):
+                print(" %s: %s" % (k, v))
+        for c, d in [
+            ('Inputs', manifest.get('inputs', {})),
+            ('Possible Outputs', manifest.get('custom', {}).get(
+                'gearificator', {}).get(
+                'outputs', {})
+            ),
+            ('Config', manifest.get('config', {})),
+        ]:
+            if not d:
+                continue
+            print("\n%s" % c)
+            for k, v in d.items():
+                print(" %s: %s" % (k, v.get('description', '')))
+
+        if config:
+            print("\nInput config:")
+            for k, v in config.items():
+                print(" %s: %s" % (k, v))
+        return
+
+    if '--print-manifest' in sys.argv:
+        import json
+        print(json.dumps(manifest, indent=2))
+        return
+
+    if '--print-config' in sys.argv:
+        import json
+        print(json.dumps(config, indent=2))
+        return
 
     # Paranoia
     outputs = glob(opj(outdir, '*'))
@@ -223,10 +263,5 @@ def main(*args, **kwargs):
             "Yarik expected no outputs being present in output dir. Got: %s"
             % ', '.join(outputs)
         )
-
-    # Load interface
-    manifest = load_json(opj(topdir, MANIFEST_FILENAME))
-    config_file = opj(topdir, CONFIG_FILENAME)
-    config = load_json(config_file).get('config', {}) if os.path.exists(config_file) else {}
 
     return run(manifest, config, indir, outdir)
