@@ -40,7 +40,7 @@ from . import nipype_handlers
 DOCKER_BASE_IMAGE = "neurodebian:stretch"
 #DOCKER_IMAGE = "gearificator:ants-test"  # neurodebian:stretch"
 DEB_PACKAGES = [
-    'ants',  # possibly versioned   ants=2.2.0-1
+   # 'ants',  # possibly versioned   ants=2.2.0-1
     'python-nipype',  # probably actually would need pip install it
 ]
 PIP_PACKAGES = [

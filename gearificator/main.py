@@ -115,7 +115,8 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     gear_spec['Dockerfile'] = create_dockerfile(
         os.path.join(outdir, "Dockerfile"),
         base_image=getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
-        deb_packages=getattr(backend, 'DEB_PACKAGES', []) + deb_packages,
+        deb_packages=getattr(backend, 'DEB_PACKAGES', []),
+        extra_deb_packages = deb_packages,
         pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages,
     )
 
@@ -136,13 +137,16 @@ def create_gear(obj, outdir, manifest_fields={}, defaults={},
     return gear_spec
 
 
-def create_dockerfile(fname, base_image, deb_packages=[], pip_packages=[]):
+def create_dockerfile(fname, base_image, deb_packages=[], extra_deb_packages=[], pip_packages=[]):
     """Create a Dockerfile for the gear
 
     ATM we aren't bothering establishing a common base image. So will rebuild
     entire spec
     """
-    deb_packages = 'python-pip ' + ' '.join(deb_packages)
+
+    deb_packages_line =  ' '.join(deb_packages) if deb_packages else ''
+    extra_deb_packages_line =  'RUN eatmydata apt-get install -y --no-install-recommends ' \
+                               + ' '.join(extra_deb_packages)  if extra_deb_packages else ''
     pip_line = "RUN pip install %s" % (' '.join(pip_packages)) if pip_packages else ''
 
     content = """\
@@ -156,33 +160,33 @@ RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /et
 
 # To prevent interactive debconf during installations
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y \
-        eatmydata
+RUN apt-get update && \\
+    apt-get install -y eatmydata
 
 # Make directory for flywheel spec (v0)
 # TODO:  gearificator prepare-docker recipename_or_url
 # cons: would somewhat loose cached steps (pre-installation, etc)
 # For now -- entire manual template
-RUN eatmydata apt-get update \
-    && eatmydata apt-get install -y %(deb_packages)s
-
-%(pip_line)s
-
-# Note: both ANTS and antsRegistration are symlinked under /usr/bin so nothing
-# for us to do here with the PATH
-RUN apt-get clean
-ENV FLYWHEEL /flywheel/v0
-RUN mkdir -p ${FLYWHEEL}
+RUN eatmydata apt-get update && \\
+    eatmydata apt-get install -y --no-install-recommends python-pip %(deb_packages_line)s
 
 # Download/Install gearificator suite
 # TODO  install git if we do via git
-RUN eatmydata apt-get install -y git
-RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && \
-    pip install -e /srv/gearificator
+RUN eatmydata apt-get install -y git python-setuptools
+RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator
+RUN pip install -e /srv/gearificator
+
+# Common to all gears settings
+ENV FLYWHEEL /flywheel/v0
+RUN mkdir -p ${FLYWHEEL}
 
 # e.g. Nipype and other pythonish beasts might crash unless 
 ENV LC_ALL C.UTF-8
+
+# Now we do this particular Gear specific installations
+%(extra_deb_packages_line)s
+RUN apt-get clean
+%(pip_line)s
 COPY run ${FLYWHEEL}/run
 COPY manifest.json ${FLYWHEEL}/manifest.json
 
@@ -208,10 +212,10 @@ set -eu
 """
     if source_files:
         for f in source_files:
-            content += 'source %s\n' % f
+            content += '. %s\n' % f
 
     # Finally actually run the thing
-    content += "python -m gearificator.run\n"
+    content += "python -m gearificator\n"
     with open(fname, 'w') as f:
         f.write(content)
     # make it executable

@@ -209,10 +209,9 @@ def get_interface(manifest, config, indir, outdir):
     return interface
 
 
-def __main__(*args, **kwargs):
+def main(*args, **kwargs):
     """The main "executioner" """
 
-    print("HERE")
     topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
     indir = opj(topdir, 'input')
     outdir = opj(topdir, 'output')

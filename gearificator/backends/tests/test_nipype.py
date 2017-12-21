@@ -37,7 +37,7 @@ def test_ants(tmpdir):
     #geardir = str(tmpdir)
     geardir = opj(tmpdir, 'gear')
     indir = opj(tmpdir, 'inputs')
-    outdir = opj(tmpdir, 'outputs')
+    outdir = opj(tmpdir, 'output')
 
     print("output dir: %s" % tmpdir)
     ants_class = ANTS
@@ -85,6 +85,7 @@ def test_ants(tmpdir):
             number_of_affine_iterations=[10000, 10000, 10000, 10000, 10000],
 
         ),
+        deb_packages=['ants'],
         build_docker=False
     )
     print(json.dumps(gear_spec, indent=2))
@@ -120,7 +121,7 @@ def test_fsl_bet(tmpdir):
     #geardir = str(tmpdir)
     geardir = tmpdir
     indir = opj(tmpdir, 'inputs')
-    outdir = opj(tmpdir, 'outputs')
+    outdir = opj(tmpdir, 'output')
     for d in geardir, indir, outdir:
         if not os.path.exists(d):
             os.makedirs(d)
@@ -144,7 +145,7 @@ def test_fsl_bet(tmpdir):
         ),
         deb_packages=['fsl-core'],
         source_files=['/etc/fsl/fsl.sh'],
-        build_docker=False
+        build_docker=True
     )
     #print(json.dumps(gear_spec, indent=2))
 
