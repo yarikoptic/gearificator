@@ -194,6 +194,12 @@ def get_interface(manifest, config, indir, outdir):
         #     )
         kwargs[c] = v
 
+    # Treat None's which could be our annotation for not specifying any value
+    # and resort to the default imposed by the tool
+    for c in list(kwargs):
+        if kwargs[c] is None:
+            kwargs.pop(c)
+
     interface = interface_cls(**kwargs)
 
     # Now we need to get through the outputs!

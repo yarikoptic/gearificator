@@ -154,3 +154,29 @@ E                u'type': u'int'}
   officially there is v0/input and v0/output (no s)
 
 * TODO List handling.   will not specify default empty []
+* TODO exchange -- should I aim to provide 'gearificator/' under https://github.com/flywheel-io/exchange/tree/master/gears
+
+  - should contain just manifests renamed into name.json
+  - could I also contain there the actual gear "sources" (Dockerfile, run) somewhere, e.g. under name/ subdirectory
+
+* TODO -- it seems that among gears examples I looked at "optional" only used among "inputs" and not among "config"
+
+this might explain why web ui did not allow me to go forward until I actually entered a value for an optional config -- it was not "warranted"
+
+* TODO -- so docker image.  gw wants custom.gear-builder.image.  All gears have custom.docker-image  .  Why custom for gear-builder???
+
+* TODO: fw gear remove ??
+
+ - Could not upload a new one to overload previous:
+
+	hopa:/tmp/gearificator_output
+	$> fw gear upload --category analysis
+	Output folder exists and will be deleted as part of the upload process.
+	Continue? (yes/no): yes
+
+	Checking that gear is ready to upload...
+	(500) Gear "nipype-interfaces-fsl-preprocess-bet-dummy" version "0.0.1.nipype.0.14.0-dummy" already exists, consider changing the version string.
+
+ - did not find in web ui on how to remove a gear?!
+
+

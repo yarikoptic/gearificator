@@ -40,7 +40,7 @@ def test_ants(tmpdir):
     outdir = opj(tmpdir, 'output')
 
     print("output dir: %s" % tmpdir)
-    ants_class = ANTS
+    ants_class = Registration
     gear_spec = create_gear(
         ants_class,
         geardir,
@@ -63,7 +63,7 @@ def test_ants(tmpdir):
             label="ANTs ANTS",
             license='BSD-3-Clause',
             maintainer="You?",
-            name="nipype-ants-ants",
+            name="nipype-ants-registration",
             source="",  # URL to the gearificator? or we will publish a generated collection somewhere?
             url="",  # TODO automagically based on nipype docs",
         ),
@@ -86,7 +86,7 @@ def test_ants(tmpdir):
 
         ),
         deb_packages=['ants'],
-        build_docker=False
+        build_docker=True
     )
     print(json.dumps(gear_spec, indent=2))
 
@@ -127,7 +127,8 @@ def test_fsl_bet(tmpdir):
             os.makedirs(d)
 
     print("output dir: %s" % tmpdir)
-    class_ = preprocess.BET # MCFLIRT
+    class_ = preprocess.BET
+    #class_ = preprocess.MCFLIRT
     gear_spec = create_gear(
         class_,
         geardir,
@@ -138,6 +139,7 @@ def test_fsl_bet(tmpdir):
             maintainer="Yaroslav O. Halchenko <debian@onerussian.com>",
             # name="nipype-fsl-bet",
             label="FSL BET (Brain Extraction Tool)",
+            #label="FSL MCFLIRT (Motion Correction for fMRI)",
             source="https://github.com/yarikoptic/gearificator",  # URL to the gearificator? or we will publish a generated collection somewhere?
         ),
         defaults=dict(
@@ -145,7 +147,8 @@ def test_fsl_bet(tmpdir):
         ),
         deb_packages=['fsl-core'],
         source_files=['/etc/fsl/fsl.sh'],
-        build_docker=True
+        build_docker=True,
+        dummy=True
     )
     #print(json.dumps(gear_spec, indent=2))
 
@@ -155,7 +158,8 @@ def test_fsl_bet(tmpdir):
 
     from gearificator.run import get_interface
 
-    config = create_config(geardir,
+    config = create_config(
+        geardir,
         in_file = opj(indir, "in_file", "fixed.nii.gz"),
         # "cheating" -- the problem is that
         # nipype would operate from cwd while composing the output
