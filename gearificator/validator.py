@@ -1,6 +1,4 @@
 """Utilities for validation of the generated files etc"""
-import json
-import jsonschema
 from os.path import (
     join as opj, pardir, dirname
 )
@@ -19,6 +17,7 @@ class Manifest(object):
 
 def validate(cls, path):
     if cls.type == 'json':
+        import jsonschema
         schema = load_json(cls.schema, must_exist=True)
         content = load_json(path, must_exist=True)
         jsonschema.validate(content, schema)  # will throw exceptions if smth is not rightr

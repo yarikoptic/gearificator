@@ -106,10 +106,11 @@ def analyze_spec(spec_cls, defaults={}):
             else:
                 # we need to massage it a bit since apparently web ui does not
                 # understand "optional" for configs
-                optional = trait_rec.pop('optional', False)
-                if optional:
-                    if 'default' not in trait_rec:
-                        trait_rec['default'] = None
+                # It will!
+                # optional = trait_rec.pop('optional', False)
+                # if optional:
+                #     if 'default' not in trait_rec:
+                #         trait_rec['default'] = None
                 config[opt] = trait_rec
             #(inputs if handler_name in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
     return config, inputs

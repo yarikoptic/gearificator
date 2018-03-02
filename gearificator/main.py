@@ -37,14 +37,20 @@ lgr = get_logger('main')
         # },
 
 """
+
+
 def create_gear(obj,
-                outdir, manifest_fields={}, defaults={},
+                outdir,
+                manifest_fields={}, defaults={},
                 build_docker=True,
                 validate=True,
                 deb_packages=[],
                 pip_packages=[],
                 source_files=[],
                 dummy=False,
+                base_image=None,
+                # TODO:
+                # category="analysis" # or "converter"
                 ):
     """Given some obj, figure out which backend to use and create a gear in
     outdir
@@ -93,6 +99,10 @@ def create_gear(obj,
         MANIFEST_CUSTOM_OUTPUTS: outputs or {}
     }
 
+    # category is not part of the manifest (yet) so we will pass it into custom
+    if 'category' in manifest:
+        custom[MANIFEST_CUSTOM_SECTION]['category'] = manifest.pop('category')
+
     # XXX it seems for an upload by gear-builder it must
     # reside (also?) in custom.gear-builder.image
     docker_image = custom.get('docker_image')
@@ -106,10 +116,14 @@ def create_gear(obj,
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
+    if 'label' not in manifest:
+        manifest['label'] = getattr(obj, '__name__')
+
     # Save manifest
     manifest_fname = os.path.join(outdir, MANIFEST_FILENAME)
     with open(manifest_fname, 'w') as f:
         json.dump(manifest, f, indent=2)
+
     if validate:
         validate_manifest(manifest_fname)
 
@@ -126,7 +140,7 @@ def create_gear(obj,
     # Create a dedicated Dockerfile
     gear_spec['Dockerfile'] = create_dockerfile(
         os.path.join(outdir, "Dockerfile"),
-        base_image=getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
+        base_image=base_image or getattr(backend, 'DOCKER_BASE_IMAGE', 'neurodebian'),
         deb_packages=getattr(backend, 'DEB_PACKAGES', []),
         extra_deb_packages=deb_packages,
         pip_packages=getattr(backend, 'PIP_PACKAGES', []) + pip_packages,

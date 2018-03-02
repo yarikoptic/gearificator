@@ -83,7 +83,6 @@ def test_ants(tmpdir):
             # and for fun
             number_of_iterations=[50, 35, 15],
             number_of_affine_iterations=[10000, 10000, 10000, 10000, 10000],
-
         ),
         deb_packages=['ants'],
         build_docker=True

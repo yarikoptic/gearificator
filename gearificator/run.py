@@ -31,7 +31,8 @@ from glob import glob
 from importlib import import_module
 from os.path import (
     join as opj,
-    exists
+    exists,
+    dirname
 )
 
 from six import string_types
@@ -220,7 +221,13 @@ def get_interface(manifest, config, indir, outdir):
 
 def main(*args, **kwargs):
     """The main "executioner" """
-    topdir = os.environ.get('FLYWHEEL')  # set by Dockerfile
+
+    topdir = os.environ.get('FLYWHEEL')
+    if not topdir and '_' in os.environ:
+        # _ contains the path to the run, so whenever we try it
+        # straight in the terminal, we could get our --help etc
+        topdir = dirname(os.environ.get('_'))
+
     indir = opj(topdir, 'inputs')
     outdir = opj(topdir, 'output')
 
@@ -233,6 +240,7 @@ def main(*args, **kwargs):
     for k, v in sorted(manifest.items()):
         if not isinstance(v, (int, tuple, dict)):
             print(" %s: %s" % (k, v))
+
     if '--help' in sys.argv:
         for c, d in [
             ('Inputs', manifest.get('inputs', {})),
