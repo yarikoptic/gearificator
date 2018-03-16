@@ -23,7 +23,13 @@ opts = dict(name=NAME,
             packages=PACKAGES,
             package_data=PACKAGE_DATA,
             install_requires=REQUIRES,
-            requires=REQUIRES)
+            requires=REQUIRES,
+            entry_points={
+                'console_scripts': [
+                    'gearificator=gearificator.spec:main'
+                ]
+            }
+)
 
 
 if __name__ == '__main__':

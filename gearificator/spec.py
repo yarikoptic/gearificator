@@ -127,11 +127,13 @@ class SkipProcessing(Exception):
 
 
 def process_spec(
-        spec=None,
-        output_dir=None,  # if none provided -- nothing would be saved
+        output,  # if none provided -- nothing would be saved
+        spec=None,  # TODO: make configurable
+        regex=None,
+        run_tests=False,
+        docker=None,
         toppath=None,
         actions=None,
-        regex=None,
         params={
             'recurse': False
         }
@@ -141,11 +143,11 @@ def process_spec(
     Parameters
     ----------
     spec: dict
-    output_dir: str
+    output: str
     regex: str, optional
       Regular expression as to which paths to process
     actions: list of str
-      What actions to perform, known ones: ... 
+      What actions to perform, known ones: ...
     include: dict, optional
     manifest: dict, optional
     params: dict, optional
@@ -154,6 +156,7 @@ def process_spec(
     -------
     None
     """
+
     lgr.log(5, toppath)
     # first process all % entries
     params_update = params.__class__()
@@ -182,10 +185,10 @@ def process_spec(
 
             lgr.debug("%s process!", toppath)
 
-            if not output_dir:
+            if not output:
                 raise SkipProcessing("output_dir")
 
-            geardir = opj(output_dir, toppath)
+            geardir = opj(output, toppath)
 
             try:
                 gear_spec = create_gear(
@@ -193,7 +196,8 @@ def process_spec(
                     geardir,
                     # Additional fields for the
                     manifest_fields=new_params.get('manifest', {}),
-                    build_docker=False,  # For now
+                    build_docker=docker in ('dummy', 'build'),  # For now
+                    dummy=docker == 'dummy',
                     **new_params.get('params', {})
                 )
                 lgr.info("%s gear generated", toppath)
@@ -219,7 +223,7 @@ def process_spec(
             subobj = getattr(obj, attr)
             subpath = '%s.%s' % (obj, attr)
             if attr not in paths_to_recurse and \
-                (not ismodule(subobj) or \
+                (not ismodule(subobj) or
                     (ismodule(subobj) and
                      subobj.__name__.startswith(obj.__name__ + '.'))):
                     lgr.debug("Adding %s", subpath)
@@ -230,19 +234,42 @@ def process_spec(
         new_path = '.'.join([toppath, path]) if toppath else path
 
         process_spec(
-                pathspec,
-                output_dir,
+                output,
+                spec=pathspec,
                 toppath=new_path,
                 actions=actions,
                 regex=regex,
                 params=new_params
         )
 
+# CLI
 
-if __name__ == '__main__':
-    process_spec(
-        load_spec(None)
-        , output_dir='/tmp/gearificator-output'
-      #  , regex=".*\.BET"
-       , regex=".*\.Dcm2Niix"
-    )
+import click
+
+
+@click.command()
+@click.option('--regex', help='Regular expression to process only the matching paths')
+@click.option('--pdb', help='Fall into pdb if errors out', is_flag=True)
+@click.option('--run-tests', help='Run tests for the gear if present', is_flag=True)
+@click.option('--docker', type=click.Choice(['skip', 'dummy', 'build']),
+              help='Either actually build a docker image. "dummy" would generate'
+                   ' a minimalistic image useful for quick upload to test '
+                   'web UI')
+@click.option('-l', '--log-level', help="Log level (TODO non-numeric values)",
+              type=click.IntRange(1, 40), default=30)
+#  @click.argument('spec', help='Input spec file')
+@click.argument('output') #, help='Output directory.  Will be created if does not exist')
+def main(
+        output,  # if none provided -- nothing would be saved
+        spec=None,  # TODO: make configurable
+        log_level=30,
+        pdb=False,
+        **kwargs
+):
+    lgr.setLevel(log_level)
+    if pdb:
+        from .utils import setup_exceptionhook
+        setup_exceptionhook()
+    return process_spec(output, spec=load_spec(spec), **kwargs)
+
+

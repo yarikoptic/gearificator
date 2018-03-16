@@ -61,4 +61,4 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'gearificator': [pjoin('resources', '*')]}
-REQUIRES = ["nipype"]
+REQUIRES = ["nipype", "click"]
