@@ -181,4 +181,54 @@ this might explain why web ui did not allow me to go forward until I actually en
 
 * ASKED Why gear category is not part of the manifest???
 
+* 
+'location': {
+ 	'name': obj['name'],
+ 	'path': '/flywheel/v0/input/' + x + '/' + obj['name'],
+ 	},
+config.json --> variable C
+C['inputs']['bob']['location']['path']
 
+* SDK
+
+** from ipython
+
+import flywheel
+fw = flywheel.Flywheel('yarick.XXXXXXXX:XXXXXXXXXXXXX')
+fw.get_current_user()
+fw.get_job('5a99c420e993ac0016ab94f2')
+
+** to get config for a job (copy pasted id from the web ui):
+
+In [6]: fw.get_job('5a99c420e993ac0016ab94f2')
+Out[6]: 
+{u'attempt': 1,
+ u'config': {u'config': {u'3Dvol': False,
+   u'anonymize_bids': u'y',
+   u'bids_sidecar': u'n',
+   u'compress_nifti': u'y',
+   u'crop': u'n',
+   u'decompress_dicoms': False,
+   u'filename': u'%f',
+   u'ignore_derived': u'n',
+   u'merge2d': u'n',
+   u'philips_scaling': u'y',
+   u'single_file_mode': u'n',
+   u'text_notes_private': u'n'},
+  u'destination': {u'id': u'5a0f5279e993ac0014ab94e6',
+   u'type': u'acquisition'},
+  u'inputs': {u'dcm2niix_input': {u'base': u'file',
+    u'hierarchy': {u'id': u'5a0f5279e993ac0014ab94e6',
+     u'type': u'acquisition'},
+    u'location': {u'name': u'sub-01_T1w.nii.gz',
+     u'path': u'/flywheel/v0/input/dcm2niix_input/sub-01_T1w.nii.gz'},
+    u'object': {u'info': {},
+     u'measurements': [],
+     u'mimetype': u'application/octet-stream',
+     u'modality': None,
+
+
+** to delete gears
+
+fw.get_all_gears  - to get the list with ids, and then
+fw.delete_gear(that id)
