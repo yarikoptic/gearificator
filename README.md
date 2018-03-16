@@ -6,6 +6,16 @@
 Currently intends to provide gearification of some interfaces and
 pipelines provided by Nipype 
 
+Q&D HOWTO ATM
+-------------
+
+
+     rm -rf /tmp/outputs; gearificator --pdb -l 20 --run-tests native --gear spec /tmp/outputs
+
+ATM will load   gearificator/specs/nipype/__init__.py  and populate /tmp/outputs
+
+Another useful option is --regex to limit to which gears to generate
+
 TODOs
 -----
 
