@@ -234,12 +234,9 @@ def main(*args, **kwargs):
     # Load interface
     manifest = load_json(opj(topdir, MANIFEST_FILENAME))
     config_file = opj(topdir, CONFIG_FILENAME)
-    config = load_json(config_file).get('config', {}) if os.path.exists(config_file) else {}
-
-    print("Manifest:")
-    for k, v in sorted(manifest.items()):
-        if not isinstance(v, (int, tuple, dict)):
-            print(" %s: %s" % (k, v))
+    config = load_json(config_file).get('config', {}) \
+        if os.path.exists(config_file) \
+        else {}
 
     if '--help' in sys.argv:
         for c, d in [
@@ -269,6 +266,15 @@ def main(*args, **kwargs):
         import json
         print(json.dumps(config, indent=2))
         return
+
+    def pprint_dict(title, d, skip_types=None):
+        print(title + ":")
+        for k, v in sorted(d.items()):
+            if not skip_types or not isinstance(v, skip_types):
+                print(" %s: %s" % (k, v))
+
+    pprint_dict("Manifest", manifest, (int, tuple, dict))
+    pprint_dict("Config", config)
 
     # Paranoia
     outputs = glob(opj(outdir, '*'))

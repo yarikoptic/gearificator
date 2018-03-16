@@ -3,6 +3,7 @@
 
 import re
 import sys
+import os.path as op
 from os.path import join as opj
 from inspect import ismodule
 from itertools import chain
@@ -126,12 +127,22 @@ class SkipProcessing(Exception):
     pass
 
 
+def get_gear_dir(path):
+    """Custom tune up for the gear path to eliminate subpaths which are of no
+    interest and convert into directories
+    """
+    # TODO: figure out a better/more reliable way
+    comps = filter(lambda p: p not in {"interfaces", "preprocess", "registration"},
+                   path.split('.'))
+    return op.join(comps)
+
+
 def process_spec(
         output,  # if none provided -- nothing would be saved
         spec=None,  # TODO: make configurable
         regex=None,
         run_tests=False,
-        docker=None,
+        gear=None,
         toppath=None,
         actions=None,
         params={
@@ -188,21 +199,37 @@ def process_spec(
             if not output:
                 raise SkipProcessing("output_dir")
 
-            geardir = opj(output, toppath)
+            # relative within hierarchy
+            geardir = opj(*get_gear_dir(toppath))
+            # full output path
+            gearpath = opj(output, geardir)
 
-            try:
-                gear_spec = create_gear(
-                    obj,
-                    geardir,
-                    # Additional fields for the
-                    manifest_fields=new_params.get('manifest', {}),
-                    build_docker=docker in ('dummy', 'build'),  # For now
-                    dummy=docker == 'dummy',
-                    **new_params.get('params', {})
-                )
-                lgr.info("%s gear generated", toppath)
-            except Exception as e:
-                raise SkipProcessing(str(e))
+            if gear != "skip":
+                try:
+                    gear_spec = create_gear(
+                        obj,
+                        gearpath,
+                        # Additional fields for the
+                        manifest_fields=new_params.get('manifest', {}),
+                        build_docker=gear != "spec",  # For now
+                        dummy=gear == 'dummy',
+                        **new_params.get('params', {})
+                    )
+                    lgr.info("%s gear generated", toppath)
+                except Exception as e:
+                    raise SkipProcessing(str(e))
+
+            if run_tests != "skip":
+                # TODO
+                # discover tests within input hierarchy
+                # run each test by
+                #  copy inputs
+                #  create proper config.json
+                #  execute test natively or via the gear
+                #  verify correspondence of # of files with target outputs
+                #  run the tests specified in tests.yaml if any, if none -
+                #  assume that they all must be identical
+                pass
         except SkipProcessing as exc:
             lgr.debug("SKIP(%s) %s", str(exc)[:100].replace('\n', ' '), toppath)
     else:
@@ -246,15 +273,21 @@ def process_spec(
 
 import click
 
-
 @click.command()
 @click.option('--regex', help='Regular expression to process only the matching paths')
 @click.option('--pdb', help='Fall into pdb if errors out', is_flag=True)
-@click.option('--run-tests', help='Run tests for the gear if present', is_flag=True)
-@click.option('--docker', type=click.Choice(['skip', 'dummy', 'build']),
-              help='Either actually build a docker image. "dummy" would generate'
-                   ' a minimalistic image useful for quick upload to test '
-                   'web UI')
+@click.option('--run-tests',
+              type=click.Choice(['skip', 'native', 'gear']),
+              help='Run tests if present.  "native" runs on the host and "gear" '
+                   'via the dockerized gear')
+@click.option('--gear', type=click.Choice(['spec', 'skip', 'dummy', 'build']),
+              help="Either actuall build gear (dummy for testing UI or just spec "
+                   "or full) or just skip (and possibly just do the tests "\
+                   "etc)")
+# @click.option('--docker', type=click.Choice(['skip', 'dummy', 'build']),
+#               help='Either actually build a docker image. "dummy" would generate'
+#                    ' a minimalistic image useful for quick upload to test '
+#                    'web UI')
 @click.option('-l', '--log-level', help="Log level (TODO non-numeric values)",
               type=click.IntRange(1, 40), default=30)
 #  @click.argument('spec', help='Input spec file')
