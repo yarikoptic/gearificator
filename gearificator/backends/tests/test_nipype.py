@@ -7,6 +7,8 @@ from gearificator.run import load_interface_from_manifest
 from gearificator.main import create_gear
 from gearificator.utils import chpwd
 
+from pytest import fixture
+
 
 def create_sample_nifti(fname, shape=(32, 32, 32), affine=None):
     import nibabel as nib
@@ -30,20 +32,31 @@ def create_config(filename, **config):
     return config
 
 
-def test_ants(tmpdir):
+@fixture
+def geardir(tmpdir):
+    """A fixture to create a tempdir for a gear
+
+    with all critical sub paths provided as attributes
+    """
+    indir = tmpdir.join('inputs')
+    outdir = tmpdir.join('output')
+    for d in tmpdir, indir, outdir:
+        if not os.path.exists(str(d)):
+            os.makedirs(str(d))
+    # print("output dir: %s" % tmpdir)
+    tmpdir.inputs = str(indir)
+    tmpdir.outputs = str(outdir)
+    tmpdir.manifest = str(tmpdir.join('manifest.json'))
+    return tmpdir
+
+
+def test_ants(geardir):
     from nipype.interfaces.ants.registration import ANTS, Registration
 
-    tmpdir = '/tmp/gearificator_output'
-    #geardir = str(tmpdir)
-    geardir = opj(tmpdir, 'gear')
-    indir = opj(tmpdir, 'inputs')
-    outdir = opj(tmpdir, 'output')
-
-    print("output dir: %s" % tmpdir)
-    ants_class = Registration
+    ants_class = ANTS  # Registration is tougher -- TODO
     gear_spec = create_gear(
         ants_class,
-        geardir,
+        str(geardir),
         # # May be add a re-mapping of some fields
         # fields_mapping={
         #     'fixed_image': 'target_image',
@@ -85,20 +98,25 @@ def test_ants(tmpdir):
             number_of_affine_iterations=[10000, 10000, 10000, 10000, 10000],
         ),
         deb_packages=['ants'],
-        build_docker=True
+        build_docker=False
     )
-    print(json.dumps(gear_spec, indent=2))
 
-    manifest_file = opj(geardir, 'manifest.json')
-    interface = load_interface_from_manifest(manifest_file)
+    interface = load_interface_from_manifest(geardir.manifest)
     assert interface is ants_class
 
     from gearificator.run import get_interface
+    indir = str(geardir.inputs)
+    outdir = str(geardir.outputs)
     config = {
         'fixed_image': opj(indir, "fixed.nii.gz"),
         'moving_image': opj(indir, "moving.nii.gz"),
     }
-    interface = get_interface(manifest_file, config, indir, outdir)
+    # we need to precreate it since it does validation
+    for f in config.values():
+        with open(f, 'w'):
+            pass
+
+    interface = get_interface(geardir.manifest, config, indir, outdir)
     cmdline = interface.cmdline
     print(cmdline)
     assert "undefined" not in cmdline
@@ -110,27 +128,19 @@ def test_ants(tmpdir):
 "--use-Histogram-Matching 0" % config
 
 
-def test_fsl_bet(tmpdir):
+def test_fsl_bet(geardir):
     from nipype.interfaces.fsl import preprocess
 
-    tmpdir = '/tmp/gearificator_output'
-    if os.path.exists(tmpdir):
-        import shutil
-        shutil.rmtree(tmpdir)
-    #geardir = str(tmpdir)
-    geardir = tmpdir
-    indir = opj(tmpdir, 'inputs')
-    outdir = opj(tmpdir, 'output')
-    for d in geardir, indir, outdir:
-        if not os.path.exists(d):
-            os.makedirs(d)
-
-    print("output dir: %s" % tmpdir)
+    # for local testing
+    # tmpdir = '/tmp/gearificator_output'
+    # if os.path.exists(tmpdir):
+    #     import shutil
+    #     shutil.rmtree(tmpdir)
     class_ = preprocess.BET
     #class_ = preprocess.MCFLIRT
     gear_spec = create_gear(
         class_,
-        geardir,
+        str(geardir),
         # Additional fields for the
         manifest_fields=dict(
             author="Yaroslav O. Halchenko",
@@ -146,38 +156,39 @@ def test_fsl_bet(tmpdir):
         ),
         deb_packages=['fsl-core'],
         source_files=['/etc/fsl/fsl.sh'],
-        build_docker=True,
+        build_docker=False,
         dummy=True
     )
     #print(json.dumps(gear_spec, indent=2))
+    assert isinstance(gear_spec, dict)
 
-    manifest_file = opj(geardir, 'manifest.json')
-    interface = load_interface_from_manifest(manifest_file)
+    interface = load_interface_from_manifest(geardir.manifest)
     assert interface is class_
 
     from gearificator.run import get_interface
 
     config = create_config(
-        geardir,
-        in_file = opj(indir, "in_file", "fixed.nii.gz"),
+        str(geardir),
+        in_file=str(geardir.join("in_file", "fixed.nii.gz")),
         # "cheating" -- the problem is that
         # nipype would operate from cwd while composing the output
         # filename if not specified, so in run we actually can do that
         # but can't do here since output dir does not necessarily exist
-        out_file=opj(outdir, "fixed_BRAIN.nii.gz"),
+        out_file=opj(str(geardir.outputs), "fixed_BRAIN.nii.gz"),
         skull=True,
     )
     create_sample_nifti(config['in_file'])
-    interface = get_interface(manifest_file, config, indir, outdir)
+    interface_args = (geardir.manifest, config, geardir.inputs, geardir.outputs)
+    interface = get_interface(*interface_args)
     cmdline = interface.cmdline
     assert "undefined" not in cmdline
     assert cmdline == "bet %(in_file)s %(out_file)s -s" \
            % (config)
 
     config.pop('out_file')
-    with chpwd(outdir):
-        interface = get_interface(manifest_file, config, indir, outdir)
+    with chpwd(geardir.outputs):
+        interface = get_interface(*interface_args)
         cmdline = interface.cmdline
         assert "undefined" not in cmdline
         assert cmdline == "bet %s %s -s" \
-               % (config['in_file'], opj(outdir, "fixed_brain.nii.gz"))
+               % (config['in_file'], opj(geardir.outputs, "fixed_brain.nii.gz"))

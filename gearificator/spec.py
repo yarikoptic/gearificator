@@ -11,18 +11,6 @@ from itertools import chain
 from gearificator import get_logger
 from gearificator.main import create_gear
 
-from gearificator.consts import (
-    DOCKER_IMAGE_REPO,
-    MANIFEST_FILENAME,
-    MANIFEST_CUSTOM_SECTION,
-    MANIFEST_CUSTOM_INTERFACE,
-    MANIFEST_CUSTOM_OUTPUTS,
-)
-from gearificator.exceptions import UnknownBackend
-
-from gearificator.run import load_interface_from_manifest
-from gearificator.validator import validate_manifest
-
 lgr = get_logger('spec')
 
 
@@ -72,14 +60,6 @@ def get_updated(old, new):
         return new
 
 
-def test_get_updated():
-    assert get_updated([{1: 2}], [2]) == [{1: 2}, 2]
-    # scalar value overrides
-    assert get_updated({1: 2, 3: 4}, {1: 3, 2: 3}) == {1: 3, 2: 3, 3: 4}
-    # list get extended, dicts updated
-    assert get_updated({1: [2], 3: {4: 1}}, {1: [3], 3: {1: 3}}) == {1: [2, 3], 3: {4: 1, 1: 3}}
-
-
 def get_object_from_path(path, attr=None):
     """Get the object given a path
 
@@ -115,13 +95,6 @@ def get_object_from_path(path, attr=None):
     for a in attr.split('.'):
         ret = getattr(ret, a)
     return ret
-
-
-def test_get_object_from_path():
-    f = get_object_from_path
-    assert f('sys.stdout') is sys.stdout
-    assert f('gearificator.get_logger') is get_logger
-    assert f('gearificator', 'get_logger') is get_logger
 
 
 class SkipProcessing(Exception):
