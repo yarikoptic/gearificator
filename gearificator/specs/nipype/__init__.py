@@ -33,7 +33,7 @@ spec = {
         "category": "analysis"
     },
     "%params": {
-        "base_image": "neurodebian:stable",
+        "base_image": "neurodebian:stretch",
     },
     ## other options to `create_gear`
     # "%params": []
@@ -108,10 +108,18 @@ spec = {
         },
 
         "dcm2nii": {
+            # https://github.com/scitran-apps/dcm2niix does much more:
+            #  - decompress DICOMs tar/zip balls
+            #  - decompress internally compressed DICOMs before processing
             "%recurse": True,
             "%params": {
                 # None as the first to say that we need to override
                 "deb_packages": ["mricron", "dcm2niix"],
+                "defaults": {
+                    # otherwise would place into current directory
+                    # TODO: we might want "hardcode" instead of "defaults"
+                    "output_dir": "outputs/",
+                }
             },
         },
     },

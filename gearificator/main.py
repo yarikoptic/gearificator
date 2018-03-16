@@ -63,6 +63,7 @@ def create_gear(obj,
       software.  To be used primarily for small uploads to troubleshoot
       web UI and our configuration settings
     """
+    lgr.info("Creating gear for %s", obj)
     gear_spec = OrderedDict() # just to ease inspection etc, let's return the full structure
 
     # figure out backend

@@ -1,6 +1,7 @@
 """Handle the spec prescribing how to traverse and create gear(s)
 """
 
+import click
 import re
 import sys
 import os.path as op
@@ -95,9 +96,9 @@ def get_object_from_path(path, attr=None):
         mod = sys.modules[path]
     else:
         # else we should try to import as is
+        path_split = path.rsplit('.', 1)
+        topmod = None if len(path_split) == 1 else path_split[0]
         try:
-            path_split = path.rsplit('.', 1)
-            topmod = None if len(path_split) == 1 else path_split[0]
             mod = __import__(path, fromlist=[topmod])
         except ImportError:
             # Might have been not a module
@@ -181,6 +182,7 @@ def process_spec(
     # Get updated parameters
     new_params = get_updated(params, params_update)
 
+    obj = None
     if toppath:
         # if points to a class we need to process.  If to a module, then depends
         # on recurse
@@ -206,7 +208,7 @@ def process_spec(
 
             if gear != "skip":
                 try:
-                    gear_spec = create_gear(
+                    _ = create_gear(
                         obj,
                         gearpath,
                         # Additional fields for the
@@ -216,10 +218,14 @@ def process_spec(
                         **new_params.get('params', {})
                     )
                     lgr.info("%s gear generated", toppath)
+                except SyntaxError:
+                    # some grave error -- blow
+                    raise
                 except Exception as e:
                     raise SkipProcessing(str(e))
 
             if run_tests != "skip":
+                lgr.info("Running tests for %s", obj)
                 # TODO
                 # discover tests within input hierarchy
                 # run each test by
@@ -232,8 +238,6 @@ def process_spec(
                 pass
         except SkipProcessing as exc:
             lgr.debug("SKIP(%s) %s", str(exc)[:100].replace('\n', ' '), toppath)
-    else:
-        obj = None
 
     paths_to_recurse = {
         path: path_spec
@@ -263,15 +267,17 @@ def process_spec(
         process_spec(
                 output,
                 spec=pathspec,
+                regex=regex,
+                run_tests=run_tests,
+                gear=gear,
                 toppath=new_path,
                 actions=actions,
-                regex=regex,
                 params=new_params
         )
 
+
 # CLI
 
-import click
 
 @click.command()
 @click.option('--regex', help='Regular expression to process only the matching paths')
@@ -282,7 +288,7 @@ import click
                    'via the dockerized gear')
 @click.option('--gear', type=click.Choice(['spec', 'skip', 'dummy', 'build']),
               help="Either actuall build gear (dummy for testing UI or just spec "
-                   "or full) or just skip (and possibly just do the tests "\
+                   "or full) or just skip (and possibly just do the tests "
                    "etc)")
 # @click.option('--docker', type=click.Choice(['skip', 'dummy', 'build']),
 #               help='Either actually build a docker image. "dummy" would generate'

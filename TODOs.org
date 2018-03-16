@@ -43,7 +43,6 @@ custom
 yes
 
 ** **requires** any way to describe that an option is required only if some other (optional) option is specified?
-** **xor** to describe that one input should be specified but not the other
 
 ** to make sure: 'outputs' are nohow "prescribed", correct?
 
@@ -232,3 +231,15 @@ Out[6]:
 
 fw.get_all_gears  - to get the list with ids, and then
 fw.delete_gear(that id)
+
+** TODO **xor** to describe that one input should be specified but not the other
+
+it is quite "popular" in nipype.  E.g. even in dcm2niix there is source_names and source_dir
+which are one or another with slightly different input traits
+
+for now I see only the need to make anything in 'xor' group optional, since we cannot mandate
+all/any of them
+
+** BIDS 
+
+based on metadata 

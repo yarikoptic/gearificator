@@ -98,10 +98,16 @@ def analyze_spec(spec_cls, defaults={}):
                     # add back the default
                     new_desc += desc
                 trait_rec['description'] = new_desc
+            # for now if 'xor', make it optional
+            if trait_rec.pop('xor', None):
+                trait_rec['optional'] = True
+                # TODO: later we might want to explicitly store them in custom to
+                # deal with them somehow more wisely
         if trait_rec is None:
-            lgr.warning("Handler returned None for %s of trait %s", opt, trait)
+            lgr.warning('Handler returned None for %s of trait %s', opt, trait)
         else:
-            if handler_name in {'File', 'InputMultiPath'}:
+            # Directory could be an output directory name specification  TODO figure out what to eat it with?
+            if handler_name in {'File', 'InputMultiPath', 'OutputMultiPath'}:  # , 'Directory'}:
                 inputs[opt] = trait_rec
             else:
                 # we need to massage it a bit since apparently web ui does not
@@ -112,7 +118,6 @@ def analyze_spec(spec_cls, defaults={}):
                 #     if 'default' not in trait_rec:
                 #         trait_rec['default'] = None
                 config[opt] = trait_rec
-            #(inputs if handler_name in {'File', 'InputMultiPath'} else config)[opt] = trait_rec
     return config, inputs
 
 
@@ -147,7 +152,8 @@ def extract_manifest(cls, defaults={}):
     #  Not yet sure if actually needed right here since outputs are not
     #  part of the manifest
     config_out, outputs = analyze_spec(cls.output_spec, defaults=defaults)
-    assert not config_out, "expecting only files in the output, not config settings"
+    if config_out:
+        assert False, "expecting only files in the output, not config settings. Got %s" % config_out
     # strip outputs of unneeded fields
     # may be eventually we would bring some back
     for v in outputs.values():

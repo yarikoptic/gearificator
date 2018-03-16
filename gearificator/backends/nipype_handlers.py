@@ -6,6 +6,12 @@ MAPPING = {
     'default': 'default',
     'desc': 'description',
 }
+BASE_TYPES = {
+    'unicode': 'string',
+    'int': 'integer',
+    'float': 'number'
+}
+
 
 import logging
 lgr = logging.getLogger('gearificator.nipype')
@@ -45,6 +51,11 @@ def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
 
     if not trait.mandatory and not rec.get('mandatory'):
         rec['optional'] = True
+
+    # we might take care about those later on
+    xor = trait.handler._metadata.get('xor', [])
+    if xor:
+        rec['xor'] = xor
     # Nipype
     #  requires?
     #  xor?  (so there is one or another, not both together)
@@ -60,6 +71,18 @@ def Int(trait, **kwargs):
 
 def Float(trait, **kwargs):
     return _get_rec('number', trait, **kwargs)
+
+
+def Range(trait, **kwargs):
+    hdl = trait.handler
+    rec = _get_rec(BASE_TYPES[hdl._validate.split('_')[0]], trait, **kwargs)
+    if hdl._low is not None:
+        rec['minimum'] = hdl._low
+    if hdl._high is not None:
+        rec['maximum'] = hdl._high
+    if rec.get('default') is None and hdl.default_value is not None:
+        rec['default'] = hdl.default_value
+    return rec
 
 
 def Bool(trait, **kwargs):
@@ -81,10 +104,7 @@ def Enum(trait, **kwargs):
         value_type = value_types.pop()  # TODO - map etc
         base_type = value_type.__name__  # TODO -- deduce type
         # apply some mappings
-        base_type = {
-            'unicode': 'string',
-            'int': 'integer',
-        }.get(base_type, base_type)
+        base_type = BASE_TYPES.get(base_type, base_type)
         rec = _get_rec(base_type, trait, **kwargs)
         # for inputs, we have 'base' to be 'file' or 'api-key', and then
         # type=enum={}
@@ -110,15 +130,30 @@ def List(trait, **kwargs):
     return rec
 
 
-def InputMultiPath(trait, **kwargs):
+def Tuple(trait, **kwargs):
+    pass
+    rec = List(trait, **kwargs)
+    # TODO: checks for uniform types and also annotate somewhere that we will need it as tuple
+    return rec
+
+
+def _MultiPath(orig_type, trait, **kwargs):
     inner_trait_types = {t.trait_type for t in trait.inner_traits}
     if len(inner_trait_types) == 1:
         inner_type = inner_trait_types.pop()
         # and we for now assume that one is enough!
         rec = File(trait, **kwargs)
     else:
-        raise ValueError("Do not know how to deal with InputMultiPath having multiple types")
+        raise ValueError("Do not know how to deal with %s having multiple types" % orig_type)
     return rec
+
+
+def InputMultiPath(trait, **kwargs):
+    return _MultiPath('InputMultiPath', trait, **kwargs)
+
+
+def OutputMultiPath(trait, **kwargs):
+    return _MultiPath('OutputMultiPath', trait, **kwargs)
 
 
 def File(trait, **kwargs):
@@ -130,5 +165,18 @@ def File(trait, **kwargs):
 
 # nipype.interfaces.base
 def Str(trait, **kwargs):
-    rec = _get_rec(None, trait, **kwargs)
-    rec['base'] = File
+    rec = _get_rec('string', trait, **kwargs)
+    # rec['base'] = 'string'  # File
+    return rec
+
+
+def Directory(trait, **kwargs):
+    # typically an output directory to be specified and even created
+    # rec = _get_rec('string', trait, **kwargs)
+    # if trait.handler.exists:
+    #     # TODO: record the fact in custom fields that the output directory needs
+    #     #       to be created if specified
+    #     pass
+    # return rec
+    return File(trait, **kwargs)
+
