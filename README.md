@@ -2,6 +2,8 @@
 
 
 ![gearificator logo](doc/images/gearificator-logo.png)
+[![Build Status](https://travis-ci.org/yarikoptic/gearificator.svg?branch=master)](https://travis-ci.org/yarikoptic/gearificator)
+[![codecov.io](https://codecov.io/github/yarikoptic/gearificator/coverage.svg?branch=master)](https://codecov.io/github/yarikoptic/gearificator?branch=master)
 
 Currently intends to provide gearification of some interfaces and
 pipelines provided by Nipype 
