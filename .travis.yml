@@ -1,0 +1,32 @@
+language: python
+
+services:
+  - docker
+
+cache:
+  - apt
+  - pip
+
+matrix:
+  include:
+  - python: 2.7
+  - python: 3.5
+
+before_install:
+  # The ultimate one-liner setup for NeuroDebian repository which might be
+  # needed later for ANTs/FSL/... but also for up to dateish nipype
+  - bash <(wget -q -O- http://neuro.debian.net/_files/neurodebian-travis.sh)
+  - travis_retry sudo apt-get update -qq
+  - sudo apt-get install -y dcm2niix ants  # fsl-core
+
+install:
+  # - tools/ci/build_install_apt  # Removed dependency on python-apt!
+  - cd ..; pip install -q codecov; cd -
+  - pip install --upgrade pip
+  - pip install -r requirements-devel.txt
+
+script:
+  - coverage run `which py.test` -s -v gearificator
+
+after_success:
+  - codecov

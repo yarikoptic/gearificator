@@ -93,7 +93,7 @@ def setup_exceptionhook(ipython=False):
        pdb.post_mortem; if not interactive, then invokes default handler.
     """
 
-    def _datalad_pdb_excepthook(type, value, tb):
+    def _pdb_excepthook(type, value, tb):
         import traceback
         traceback.print_exception(type, value, tb)
         print()
@@ -107,4 +107,4 @@ def setup_exceptionhook(ipython=False):
                                              # color_scheme='Linux',
                                              call_pdb=is_interactive())
     else:
-        sys.excepthook = _datalad_pdb_excepthook
+        sys.excepthook = _pdb_excepthook

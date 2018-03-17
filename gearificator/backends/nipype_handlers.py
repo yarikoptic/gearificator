@@ -1,5 +1,9 @@
 from collections import OrderedDict
 
+import logging
+lgr = logging.getLogger('gearificator.nipype')
+
+
 # Handlers for various traits
 # may be later TODO
 MAPPING = {
@@ -8,13 +12,10 @@ MAPPING = {
 }
 BASE_TYPES = {
     'unicode': 'string',
+    'str': 'string',
     'int': 'integer',
     'float': 'number'
 }
-
-
-import logging
-lgr = logging.getLogger('gearificator.nipype')
 
 
 # TODO: may be RF into a class with fancy getattr
@@ -131,7 +132,6 @@ def List(trait, **kwargs):
 
 
 def Tuple(trait, **kwargs):
-    pass
     rec = List(trait, **kwargs)
     # TODO: checks for uniform types and also annotate somewhere that we will need it as tuple
     return rec
