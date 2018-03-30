@@ -240,6 +240,9 @@ which are one or another with slightly different input traits
 for now I see only the need to make anything in 'xor' group optional, since we cannot mandate
 all/any of them
 
+- boutiques  has "groups" to define similar groupping/exclusion
+- boutiques has also tests, which generates/runs pytests
+
 ** BIDS 
 
 based on metadata 
