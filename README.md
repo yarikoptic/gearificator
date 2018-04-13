@@ -11,12 +11,15 @@ pipelines provided by Nipype
 Q&D HOWTO ATM
 -------------
 
+     git clone git://github.com/yarikoptic/gearificated-nipype
+     gearificator spec process --run-tests gear --gear build gearificated-nipype
 
-     rm -rf /tmp/outputs; gearificator --pdb -l 20 --run-tests native --gear spec /tmp/outputs
+which should produce identical (to what already there) results (you could use
+`git -C gearificated-nipype status` to check).  Also the outputs of the test runs
+will be placed under `gearificated-nipype/tests-run`
 
-ATM will load   gearificator/specs/nipype/__init__.py  and populate /tmp/outputs
-
-Another useful option is --regex to limit to which gears to generate
+`spec process` has a number of useful option such as --regex to limit to
+which gears to generate
 
 TODOs
 -----
