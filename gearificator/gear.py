@@ -80,11 +80,12 @@ def run_gear_docker(dockerimage, testdir):
     logsdir = op.join(testdir, 'logs')  # common
 
     def _m(s):
-        return ["-v", "%s/%s:%s/%s" % (testdir, s, GEAR_FLYWHEEL_DIR, s)]
+        return ["-v", "%s/%s:%s/%s"
+                % (op.realpath(testdir), s, GEAR_FLYWHEEL_DIR, s)]
 
     outs = subprocess_call(
         ['docker', 'run', '--rm']
-        + [_m(s) for s in [GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_CONFIG_FILENAME]]
+        + sum(map(_m, [GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_CONFIG_FILENAME]), [])
         + [dockerimage],
         cwd=testdir,
         logsdir=logsdir,
