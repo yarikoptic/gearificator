@@ -43,8 +43,10 @@ from gearificator.consts import (
     MANIFEST_CUSTOM_SECTION,
     MANIFEST_CUSTOM_OUTPUTS,
     MANIFEST_CUSTOM_INTERFACE,
-    MANIFEST_FILENAME,
-    CONFIG_FILENAME,
+    GEAR_MANIFEST_FILENAME,
+    GEAR_CONFIG_FILENAME,
+    GEAR_INPUTS_DIR,
+    GEAR_OUTPUT_DIR
 )
 from gearificator.utils import (
     load_json,
@@ -228,12 +230,12 @@ def main(*args, **kwargs):
         # straight in the terminal, we could get our --help etc
         topdir = dirname(os.environ.get('_'))
 
-    indir = opj(topdir, 'inputs')
-    outdir = opj(topdir, 'output')
+    indir = opj(topdir, GEAR_INPUTS_DIR)
+    outdir = opj(topdir, GEAR_OUTPUT_DIR)
 
     # Load interface
-    manifest = load_json(opj(topdir, MANIFEST_FILENAME))
-    config_file = opj(topdir, CONFIG_FILENAME)
+    manifest = load_json(opj(topdir, GEAR_MANIFEST_FILENAME))
+    config_file = opj(topdir, GEAR_CONFIG_FILENAME)
     config = load_json(config_file).get('config', {}) \
         if os.path.exists(config_file) \
         else {}

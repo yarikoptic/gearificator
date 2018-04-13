@@ -26,7 +26,7 @@ opts = dict(name=NAME,
             requires=REQUIRES,
             entry_points={
                 'console_scripts': [
-                    'gearificator=gearificator.spec:main'
+                    'gearificator=gearificator.cli:cli'
                 ]
             }
 )

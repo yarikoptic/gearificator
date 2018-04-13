@@ -38,15 +38,17 @@ def geardir(tmpdir):
 
     with all critical sub paths provided as attributes
     """
-    indir = tmpdir.join('inputs')
-    outdir = tmpdir.join('output')
+    from gearificator.consts import \
+        GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_MANIFEST_FILENAME
+    indir = tmpdir.join(GEAR_INPUTS_DIR)
+    outdir = tmpdir.join(GEAR_OUTPUT_DIR)
     for d in tmpdir, indir, outdir:
         if not os.path.exists(str(d)):
             os.makedirs(str(d))
     # print("output dir: %s" % tmpdir)
     tmpdir.inputs = str(indir)
     tmpdir.outputs = str(outdir)
-    tmpdir.manifest = str(tmpdir.join('manifest.json'))
+    tmpdir.manifest = str(tmpdir.join(GEAR_MANIFEST_FILENAME))
     return tmpdir
 
 

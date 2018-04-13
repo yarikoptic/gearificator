@@ -1,8 +1,10 @@
 import json
 import os
 from os.path import (
+    basename,
     isabs,
     normpath,
+    dirname,
     join as opj,
 )
 import sys
@@ -108,3 +110,88 @@ def setup_exceptionhook(ipython=False):
                                              call_pdb=is_interactive())
     else:
         sys.excepthook = _pdb_excepthook
+
+
+def import_module_from_file(modpath, log=lgr.debug):
+    """Import provided module given a path
+    """
+    assert(modpath.endswith('.py'))  # for now just for .py files
+    dirname_ = dirname(modpath)
+
+    try:
+        log("Importing %s" % modpath)
+        sys.path.insert(0, dirname_)
+        modname = basename(modpath)[:-3]
+        mod = __import__(modname, level=0)
+        return mod
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to import module from %s: %s" % (modpath, e))
+    finally:
+        if dirname_ in sys.path:
+            sys.path.pop(sys.path.index(dirname_))
+        else:
+            log("Expected path %s to be within sys.path, but it was gone!"
+                % dirname_)
+
+
+class PathRoot(object):
+    """Find the root of paths based on a predicate function.
+
+    The path -> root mapping is cached across calls.
+
+    Parameters
+    ----------
+    predicate : callable
+        A callable that will be passed a path and should return true
+        if that path should be considered a root.
+
+    Acknowledgement
+    ---------------
+    Borrowed from NICEMAN.utils under MIT license
+    """
+
+    def __init__(self, predicate):
+        self._pred = predicate
+        self._cache = {}  # path -> root
+
+    def __call__(self, path):
+        """Find root of `path` based on `predicate`.
+
+        Parameters
+        ----------
+        path : str
+            Find this path's root.
+
+        Returns
+        -------
+        str or None
+        """
+        to_cache = []
+        root = None
+        for pth in self._walk_up(path):
+            if pth in self._cache:
+                root = self._cache[pth]
+                break
+
+            to_cache.append(pth)
+
+            if self._pred(pth):
+                root = pth
+                break
+
+        for pth in to_cache:
+            self._cache[pth] = root
+        return root
+
+    @staticmethod
+    def _walk_up(path):
+        """Yield PATH, chopping off the right-most directory each iteration.
+
+        Parameters
+        ----------
+        path : string
+        """
+        while path not in [os.path.pathsep, os.path.sep, ""]:
+            yield path
+            path = os.path.dirname(path)

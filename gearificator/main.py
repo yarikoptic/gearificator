@@ -11,7 +11,7 @@ from subprocess import Popen
 from gearificator import __version__, get_logger
 from gearificator.consts import (
     DOCKER_IMAGE_REPO,
-    MANIFEST_FILENAME,
+    GEAR_MANIFEST_FILENAME,
     MANIFEST_CUSTOM_SECTION,
     MANIFEST_CUSTOM_INTERFACE,
     MANIFEST_CUSTOM_OUTPUTS,
@@ -121,7 +121,7 @@ def create_gear(obj,
         manifest['label'] = getattr(obj, '__name__')
 
     # Save manifest
-    manifest_fname = os.path.join(outdir, MANIFEST_FILENAME)
+    manifest_fname = os.path.join(outdir, GEAR_MANIFEST_FILENAME)
     with open(manifest_fname, 'w') as f:
         json.dump(manifest, f, indent=2)
 

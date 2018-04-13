@@ -1,8 +1,8 @@
 #emacs: -*- mode: python-mode; py-indent-offset: 4; tab-width: 4; indent-tabs-mode: nil -*- 
 #ex: set sts=4 ts=4 sw=4 noet:
-"""Common constants
+"""
 
- COPYRIGHT: Yaroslav Halchenko 2017
+ COPYRIGHT: Yaroslav Halchenko 2014
 
  LICENSE: MIT
 
@@ -25,16 +25,23 @@
   THE SOFTWARE.
 """
 
-# there is no need I think
-#MANIFEST_BACKEND_FIELD = "gearificator-backend"
-MANIFEST_CUSTOM_SECTION = "gearificator"
-MANIFEST_CUSTOM_INTERFACE = "interface"
-MANIFEST_CUSTOM_OUTPUTS = "outputs"
+__author__ = 'yoh'
+__license__ = 'MIT'
 
-DOCKER_IMAGE_REPO = "gearificator"
-GEAR_MANIFEST_FILENAME = "manifest.json"
-GEAR_RUN_FILENAME = "run"
-GEAR_CONFIG_FILENAME = "config.json"
+import click
+import logging
+from . import get_logger
+lgr = get_logger()
 
-GEAR_INPUTS_DIR = "input"
-GEAR_OUTPUT_DIR = "output"
+
+# group to provide commands
+@click.group()
+@click.option('-l', '--log-level', help="Log level (TODO non-numeric values)",
+              type=click.IntRange(1, 40), default=logging.INFO)
+@click.option('--pdb', help='Fall into pdb if errors out', is_flag=True)
+def cli(log_level, pdb=False):
+    lgr = get_logger()  # common one
+    lgr.setLevel(log_level)
+    if pdb:
+        from .utils import setup_exceptionhook
+        setup_exceptionhook()

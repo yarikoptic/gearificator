@@ -5,18 +5,30 @@ import click
 import re
 import sys
 import os.path as op
+import os
+import shutil
+import subprocess
+import tempfile
+
+from glob import glob
 from os.path import join as opj
 from inspect import ismodule
 from itertools import chain
-from gearificator import get_logger
-from gearificator.main import create_gear
+from . import get_logger
+from .main import create_gear
+from .utils import import_module_from_file
+from .consts import  GEAR_MANIFEST_FILENAME, GEAR_RUN_FILENAME
 
 lgr = get_logger('spec')
 
+from .spec_tests import prepare, check
+
 
 def load_spec(path):
-    # for now we have just one and we might redo it in yaml or alike
-    from gearificator.specs.nipype import spec
+    mod_spec = import_module_from_file(op.join(path, 'spec.py'))
+    spec = mod_spec.spec
+    assert '%path' not in spec
+    spec['%path'] = path
     return spec
 
 
@@ -68,7 +80,7 @@ def get_object_from_path(path, attr=None):
     """
     if not path:
         raise ValueError(
-            "Cannot figure out anything from empty path. Remaining attr=%s"
+            "Cannot figure out anything from an empty path. Remaining attr=%s"
             % attr)
 
     if path in sys.modules:
@@ -111,7 +123,7 @@ def get_gear_dir(path):
     return op.join(comps)
 
 
-def process_spec(
+def _process_spec(
         output,  # if none provided -- nothing would be saved
         spec=None,  # TODO: make configurable
         regex=None,
@@ -149,13 +161,18 @@ def process_spec(
         if not param.startswith('%'):
             continue
         param_ = param[1:]
-        assert param_ in ('include', 'manifest', 'params', 'recurse')
+        assert param_ in ('include', 'manifest', 'params', 'recurse', 'path')
         params_update[param_] = spec[param]
 
     # Get updated parameters
     new_params = get_updated(params, params_update)
 
     obj = None
+    # TODO: move all the tests harnessing outside, since it should be global
+    # and not straight in here
+    tests_passed = 0
+    tests_errored = 0
+    tests_failed = 0
     if toppath:
         # if points to a class we need to process.  If to a module, then depends
         # on recurse
@@ -198,16 +215,39 @@ def process_spec(
                     raise SkipProcessing(str(e))
 
             if run_tests != "skip":
-                lgr.info("Running tests for %s", obj)
-                # TODO
-                # discover tests within input hierarchy
-                # run each test by
-                #  copy inputs
-                #  create proper config.json
-                #  execute test natively or via the gear
-                #  verify correspondence of # of files with target outputs
-                #  run the tests specified in tests.yaml if any, if none -
-                #  assume that they all must be identical
+                # TODO Move away and generalize
+                testsdir = op.join(params['path'], 'tests', geardir)
+                tests = glob(op.join(testsdir, 'test_*.yaml'))
+                if not tests:
+                    lgr.warning("TESTS: no tests were found")
+                else:
+                    lgr.info("TESTS: found %d tests", len(tests))
+                for itest, test in enumerate(tests):
+                    lgr.info(" test #%d: %s", itest+1, test)
+                    # TODO: Redo all the below to just use one of the runners
+                    # such as pytest internally
+                    try:
+                        testdir = tempfile.mkdtemp(prefix='gf_test-%d_' % itest)
+                        prepare(test, testdir)
+                        if run_tests == 'native':
+                            run_gear_native(gearpath, testdir)
+                        elif run_tests == 'gear':
+                            run_gear_docker("DOCKERIMAGENAME", testdir)
+                        else:
+                            raise ValueError(run_tests)
+
+                        check(test, testdir)
+                        #  verify correspondence of # of files with target outputs
+                        #  run the tests specified in tests.yaml if any, if none -
+                        #  assume that they all must be identical
+                    except Exception as exc:
+                        lgr.error("  FAILED! %s", exc)
+                        tests_errored += 1
+                    finally:
+                        # TODO shutil.rmtree(testdir)
+                        import os
+                        # os.system("ls -lRa %s/*" % testdir)
+                        pass
                 pass
         except SkipProcessing as exc:
             lgr.debug("SKIP(%s) %s", str(exc)[:100].replace('\n', ' '), toppath)
@@ -237,7 +277,7 @@ def process_spec(
     for path, pathspec in paths_to_recurse.items():
         new_path = '.'.join([toppath, path]) if toppath else path
 
-        process_spec(
+        _process_spec(
                 output,
                 spec=pathspec,
                 regex=regex,
@@ -249,12 +289,43 @@ def process_spec(
         )
 
 
+def run_gear_native(gearpath, testdir):
+    # if we run natively, we have to copy manifest for the gear
+    for f in [GEAR_RUN_FILENAME, GEAR_MANIFEST_FILENAME]:
+        shutil.copy(op.join(gearpath, f), testdir)
+    logsdir = op.join(testdir, '.gearificator', 'logs')
+    if not op.exists(logsdir):
+        os.makedirs(logsdir)
+    # now just execute that gear in the directory
+    log_stdout_path = op.join(logsdir, 'out')
+    log_stderr_path = op.join(logsdir, 'err')
+    with open(log_stdout_path, 'w') as log_stdout, \
+            open(log_stderr_path, 'w') as log_stderr:
+        exit_code = subprocess.call(
+            './run', stdin=subprocess.PIPE,
+            stdout=log_stdout,
+            stderr=log_stderr,
+            env=dict(os.environ, FLYWHEEL=testdir),
+            cwd=testdir
+        )
+    if exit_code:
+        raise RuntimeError(
+            "Running gear under %s failed. Exit: %d"
+            % (testdir, exit_code)
+        )
+    outs = [
+        open(f).read() for f in [log_stdout_path, log_stderr_path]
+    ]
+    lgr.debug("Finished running gear with out=%s err=%s", *outs)
+    return outs
+
+
 # CLI
 
+from .cli_base import cli
 
-@click.command()
+@cli.command()
 @click.option('--regex', help='Regular expression to process only the matching paths')
-@click.option('--pdb', help='Fall into pdb if errors out', is_flag=True)
 @click.option('--run-tests',
               type=click.Choice(['skip', 'native', 'gear']),
               help='Run tests if present.  "native" runs on the host and "gear" '
@@ -267,21 +338,12 @@ def process_spec(
 #               help='Either actually build a docker image. "dummy" would generate'
 #                    ' a minimalistic image useful for quick upload to test '
 #                    'web UI')
-@click.option('-l', '--log-level', help="Log level (TODO non-numeric values)",
-              type=click.IntRange(1, 40), default=30)
-#  @click.argument('spec', help='Input spec file')
+@click.argument('input') # , help='Directory with the spec.py and tests/, ...')
 @click.argument('output') #, help='Output directory.  Will be created if does not exist')
-def main(
+def process_spec(
+        input,
         output,  # if none provided -- nothing would be saved
-        spec=None,  # TODO: make configurable
-        log_level=30,
-        pdb=False,
         **kwargs
 ):
-    lgr.setLevel(log_level)
-    if pdb:
-        from .utils import setup_exceptionhook
-        setup_exceptionhook()
-    return process_spec(output, spec=load_spec(spec), **kwargs)
-
-
+    spec = load_spec(input)
+    return _process_spec(output, spec=spec, **kwargs)
