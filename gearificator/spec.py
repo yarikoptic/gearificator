@@ -5,19 +5,17 @@ import click
 import re
 import sys
 import os.path as op
-import os
 import shutil
-import subprocess
 import tempfile
 
 from glob import glob
 from os.path import join as opj
 from inspect import ismodule
 from itertools import chain
+
+from gearificator.gear import run_gear_native, run_gear_docker, create_gear
 from . import get_logger
-from .main import create_gear
 from .utils import import_module_from_file
-from .consts import  GEAR_MANIFEST_FILENAME, GEAR_RUN_FILENAME
 
 lgr = get_logger('spec')
 
@@ -128,6 +126,7 @@ def _process(
         spec=None,  # TODO: make configurable
         regex=None,
         run_tests=False,
+        run_testsdir=None,
         gear=None,
         toppath=None,
         actions=None,
@@ -196,9 +195,10 @@ def _process(
             # full output path
             gearpath = opj(outputdir, geardir)
 
+            gear_report = None
             if gear != "skip":
                 try:
-                    _ = create_gear(
+                    gear_report = create_gear(
                         obj,
                         gearpath,
                         # Additional fields for the
@@ -223,16 +223,30 @@ def _process(
                 else:
                     lgr.info("TESTS: found %d tests", len(tests))
                 for itest, test in enumerate(tests):
-                    lgr.info(" test #%d: %s", itest+1, test)
+                    testname = op.splitext(op.basename(test))[0]
+                    testmsg = " test #%d: %s" % (itest+1, testname)
+                    lgr.debug(" running " + testmsg)
                     # TODO: Redo all the below to just use one of the runners
                     # such as pytest internally
                     try:
-                        testdir = tempfile.mkdtemp(prefix='gf_test-%d_' % itest)
+                        if run_testsdir is not None:
+                            testdir = tempfile.mkdtemp(prefix='gf_test-%d_' % itest)
+                        else:
+                            # create one under outputdir replicating testsdir hierarchy
+
+                            testdir = op.join(
+                                params['path'], 'tests-run', geardir, testname)
+                            if op.exists(testdir):
+                                shutil.rmtree(testdir)
+
                         _prepare(test, testdir)
+
                         if run_tests == 'native':
                             run_gear_native(gearpath, testdir)
                         elif run_tests == 'gear':
-                            run_gear_docker("DOCKERIMAGENAME", testdir)
+                            if not gear_report:
+                                raise ValueError("--gear option must not be 'skip'")
+                            run_gear_docker(gear_report["docker_image"], testdir)
                         else:
                             raise ValueError(run_tests)
 
@@ -240,8 +254,9 @@ def _process(
                         #  verify correspondence of # of files with target outputs
                         #  run the tests specified in tests.yaml if any, if none -
                         #  assume that they all must be identical
+                        lgr.info(testmsg + " passed")
                     except Exception as exc:
-                        lgr.error("  FAILED! %s", exc)
+                        lgr.error(testmsg + " FAILED: %s", exc)
                         tests_errored += 1
                     finally:
                         # TODO shutil.rmtree(testdir)
@@ -289,37 +304,6 @@ def _process(
         )
 
 
-def run_gear_native(gearpath, testdir):
-    # if we run natively, we have to copy manifest for the gear
-    for f in [GEAR_RUN_FILENAME, GEAR_MANIFEST_FILENAME]:
-        shutil.copy(op.join(gearpath, f), testdir)
-    logsdir = op.join(testdir, '.gearificator', 'logs')
-    if not op.exists(logsdir):
-        os.makedirs(logsdir)
-    # now just execute that gear in the directory
-    log_stdout_path = op.join(logsdir, 'out')
-    log_stderr_path = op.join(logsdir, 'err')
-    with open(log_stdout_path, 'w') as log_stdout, \
-            open(log_stderr_path, 'w') as log_stderr:
-        exit_code = subprocess.call(
-            './run', stdin=subprocess.PIPE,
-            stdout=log_stdout,
-            stderr=log_stderr,
-            env=dict(os.environ, FLYWHEEL=testdir),
-            cwd=testdir
-        )
-    if exit_code:
-        raise RuntimeError(
-            "Running gear under %s failed. Exit: %d"
-            % (testdir, exit_code)
-        )
-    outs = [
-        open(f).read() for f in [log_stdout_path, log_stderr_path]
-    ]
-    lgr.debug("Finished running gear with out=%s err=%s", *outs)
-    return outs
-
-
 # CLI
 
 from .cli_base import cli
@@ -344,11 +328,13 @@ def grp():
 #               help='Either actually build a docker image. "dummy" would generate'
 #                    ' a minimalistic image useful for quick upload to test '
 #                    'web UI')
+@click.option('--run-testsdir', help='Directory, under which run the tests. If none provided, will be tests-runs/ under outputdir')
 @click.option('-o', '--outputdir', help='Output directory, to not place under gears/ alongside the spec')
 @click.argument('inputdir') # , help='Directory with the spec.py and tests/, ...')
 def process(
         inputdir,
         outputdir=None,  # if none provided -- nothing would be saved
+        run_testsdir=None,
         **kwargs
 ):
     """Load and process the spec
@@ -374,4 +360,4 @@ def process(
     spec = load_spec(inputdir)
     if outputdir is None:
         outputdir = op.join(inputdir, 'gears')
-    return _process(outputdir, spec=spec, **kwargs)
+    return _process(outputdir, spec=spec, run_testsdir=run_testsdir, **kwargs)

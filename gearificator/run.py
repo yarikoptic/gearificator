@@ -26,6 +26,8 @@
 """
 
 import os
+import os.path as op
+
 import sys
 from glob import glob
 from importlib import import_module
@@ -230,8 +232,8 @@ def main(*args, **kwargs):
         # straight in the terminal, we could get our --help etc
         topdir = dirname(os.environ.get('_'))
 
-    indir = opj(topdir, GEAR_INPUTS_DIR)
-    outdir = opj(topdir, GEAR_OUTPUT_DIR)
+    indir = op.abspath(opj(topdir, GEAR_INPUTS_DIR))
+    outdir = op.abspath(opj(topdir, GEAR_OUTPUT_DIR))
 
     # Load interface
     manifest = load_json(opj(topdir, GEAR_MANIFEST_FILENAME))

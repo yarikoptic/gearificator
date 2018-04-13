@@ -62,6 +62,7 @@ def _prepare(testfile, outputdir):
     lgr.debug(" generating config.json")
     with open(op.join(outputdir, 'config.json'), 'w') as f:
         # needs to be nested within 'config' item AFAIK
+        # needs inputs as well TODO
         json.dump(
             {
                 'config':  test_spec.get('config', {})

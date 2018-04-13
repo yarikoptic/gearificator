@@ -4,7 +4,7 @@ from os.path import join as opj
 from pprint import pprint
 
 from gearificator.run import load_interface_from_manifest
-from gearificator.main import create_gear
+from gearificator.gear import create_gear
 from gearificator.utils import chpwd
 
 from pytest import fixture

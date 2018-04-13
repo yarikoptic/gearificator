@@ -36,5 +36,6 @@ GEAR_MANIFEST_FILENAME = "manifest.json"
 GEAR_RUN_FILENAME = "run"
 GEAR_CONFIG_FILENAME = "config.json"
 
+GEAR_FLYWHEEL_DIR = "/flywheel/v0"
 GEAR_INPUTS_DIR = "input"
 GEAR_OUTPUT_DIR = "output"
