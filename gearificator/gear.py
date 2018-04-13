@@ -7,6 +7,8 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
+
 from collections import OrderedDict
 from importlib import import_module
 from os import path as op
@@ -31,26 +33,36 @@ def subprocess_call(cmd, cwd=None, logsdir=None, env=None):
 
     Returns stdout, stderr
     """
-    # TODO: if not logsdir - make tempdir
-    if not op.exists(logsdir):
-        os.makedirs(logsdir)
-    # now just execute that gear in the directory
-    log_stdout_path = op.join(logsdir, 'out')
-    log_stderr_path = op.join(logsdir, 'err')
-    with open(log_stdout_path, 'w') as log_stdout, \
-            open(log_stderr_path, 'w') as log_stderr:
-        lgr.debug("Running %s", cmd)
-        exit_code = subprocess.call(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=log_stdout,
-            stderr=log_stderr,
-            env=env,
-            cwd=cwd
-        )
-    outs = [
-        open(f).read() for f in [log_stdout_path, log_stderr_path]
-    ]
+    if not logsdir:
+        logsdir = tempfile.mkdtemp(prefix="gearificator")
+        delete_logs = True
+    else:
+        delete_logs = False
+
+    try:
+        # TODO: if not logsdir - make tempdir
+        if not op.exists(logsdir):
+            os.makedirs(logsdir)
+        # now just execute that gear in the directory
+        log_stdout_path = op.join(logsdir, 'out')
+        log_stderr_path = op.join(logsdir, 'err')
+        with open(log_stdout_path, 'w') as log_stdout, \
+                open(log_stderr_path, 'w') as log_stderr:
+            lgr.debug("Running %s", cmd)
+            exit_code = subprocess.call(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=log_stdout,
+                stderr=log_stderr,
+                env=env,
+                cwd=cwd
+            )
+        outs = [
+            open(f).read() for f in [log_stdout_path, log_stderr_path]
+        ]
+    finally:
+        if delete_logs:
+            shutil.rmtree(logsdir)
     if exit_code:
         # TODO: make custom one to return outs
         raise RuntimeError(
@@ -92,6 +104,14 @@ def run_gear_docker(dockerimage, testdir):
         env=dict(os.environ, FLYWHEEL='.')
     )
     return outs
+
+
+def build_gear(buildir, docker_image):
+    lgr.info("Building gear docker image %s", docker_image)
+    return subprocess_call(
+        ['docker', 'build', '-t', docker_image, '.'],
+        cwd=buildir,
+    )
 
 
 def create_gear(obj,
@@ -209,21 +229,6 @@ def create_gear(obj,
         gear_spec['docker_build_stdout'] = out
         gear_spec['docker_build_stderr'] = err
     return gear_spec
-
-
-def build_gear(buildir, docker_image):
-    # TODO: docker build -t image_name
-    lgr.info("Running docker build")
-    build_cmd = ['docker', 'build', '-t', docker_image, '.']
-    print(build_cmd)
-    popen = Popen(build_cmd, cwd=buildir)
-    res = popen.wait()
-    if res:
-        raise RuntimeError(
-            "Failed to build docker image: exit code was %d"
-            % res
-        )
-    return "TODO stdout", "TODO stderr"
 
 
 def create_dockerfile(
