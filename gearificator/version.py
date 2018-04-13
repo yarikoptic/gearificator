@@ -60,5 +60,7 @@ MAJOR = _version_major
 MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
-PACKAGE_DATA = {'gearificator': [pjoin('resources', '*')]}
+PACKAGE_DATA = {
+    'gearificator': [pjoin('resources', '*'), pjoin('borrowed', '*.json')]
+}
 REQUIRES = ["six", "nipype", "click", "jsonschema"]

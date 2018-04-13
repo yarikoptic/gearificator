@@ -212,7 +212,7 @@ def _process(
                     # some grave error -- blow
                     raise
                 except Exception as e:
-                    raise SkipProcessing(str(e))
+                    raise SkipProcessing("ERROR happened: %s" % str(e))
 
             if run_tests != "skip":
                 # TODO Move away and generalize
