@@ -21,7 +21,7 @@ from .consts import  GEAR_MANIFEST_FILENAME, GEAR_RUN_FILENAME
 
 lgr = get_logger('spec')
 
-from .spec_tests import prepare, check
+from .spec_tests import _prepare, _check
 
 
 def load_spec(path):
@@ -123,8 +123,8 @@ def get_gear_dir(path):
     return op.join(comps)
 
 
-def _process_spec(
-        output,  # if none provided -- nothing would be saved
+def _process(
+        outputdir,  # if none provided -- nothing would be saved
         spec=None,  # TODO: make configurable
         regex=None,
         run_tests=False,
@@ -140,7 +140,7 @@ def _process_spec(
     Parameters
     ----------
     spec: dict
-    output: str
+    outputdir: str
     regex: str, optional
       Regular expression as to which paths to process
     actions: list of str
@@ -188,13 +188,13 @@ def _process_spec(
 
             lgr.debug("%s process!", toppath)
 
-            if not output:
+            if not outputdir:
                 raise SkipProcessing("output_dir")
 
             # relative within hierarchy
             geardir = opj(*get_gear_dir(toppath))
             # full output path
-            gearpath = opj(output, geardir)
+            gearpath = opj(outputdir, geardir)
 
             if gear != "skip":
                 try:
@@ -228,7 +228,7 @@ def _process_spec(
                     # such as pytest internally
                     try:
                         testdir = tempfile.mkdtemp(prefix='gf_test-%d_' % itest)
-                        prepare(test, testdir)
+                        _prepare(test, testdir)
                         if run_tests == 'native':
                             run_gear_native(gearpath, testdir)
                         elif run_tests == 'gear':
@@ -236,7 +236,7 @@ def _process_spec(
                         else:
                             raise ValueError(run_tests)
 
-                        check(test, testdir)
+                        _check(test, testdir)
                         #  verify correspondence of # of files with target outputs
                         #  run the tests specified in tests.yaml if any, if none -
                         #  assume that they all must be identical
@@ -277,8 +277,8 @@ def _process_spec(
     for path, pathspec in paths_to_recurse.items():
         new_path = '.'.join([toppath, path]) if toppath else path
 
-        _process_spec(
-                output,
+        _process(
+                outputdir,
                 spec=pathspec,
                 regex=regex,
                 run_tests=run_tests,
@@ -324,7 +324,13 @@ def run_gear_native(gearpath, testdir):
 
 from .cli_base import cli
 
-@cli.command()
+
+@cli.group("spec")
+def grp():
+    """Commands to manipulate the spec"""
+    pass
+
+@grp.command()
 @click.option('--regex', help='Regular expression to process only the matching paths')
 @click.option('--run-tests',
               type=click.Choice(['skip', 'native', 'gear']),
@@ -338,12 +344,34 @@ from .cli_base import cli
 #               help='Either actually build a docker image. "dummy" would generate'
 #                    ' a minimalistic image useful for quick upload to test '
 #                    'web UI')
-@click.argument('input') # , help='Directory with the spec.py and tests/, ...')
-@click.argument('output') #, help='Output directory.  Will be created if does not exist')
-def process_spec(
-        input,
-        output,  # if none provided -- nothing would be saved
+@click.option('-o', '--outputdir', help='Output directory, to not place under gears/ alongside the spec')
+@click.argument('inputdir') # , help='Directory with the spec.py and tests/, ...')
+def process(
+        inputdir,
+        outputdir=None,  # if none provided -- nothing would be saved
         **kwargs
 ):
-    spec = load_spec(input)
-    return _process_spec(output, spec=spec, **kwargs)
+    """Load and process the spec
+
+    The "spec" ATM is a directory with
+
+    \b
+    - spec.py
+       file which prescribes how to traverse class hierarchy, and provides
+       custom fields for gears
+    - inputs/
+       directory containing datasets used in tests
+    - tests/
+       directory mimicing produced gears/ directory hierarchy but providing
+       per gear testname.yaml with specification of the test, and testname/
+       directory with target outputs
+    - gears/
+       directory gets generated/used as the default `outputdir/`
+
+    Recommended to keep inputs/ and tests output directories content under
+    git-annex to minimize storage requirement etc
+    """
+    spec = load_spec(inputdir)
+    if outputdir is None:
+        outputdir = op.join(inputdir, 'gears')
+    return _process(outputdir, spec=spec, **kwargs)

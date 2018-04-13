@@ -26,16 +26,16 @@ lgr = get_logger('spec_tests')
 find_datasets_path = PathRoot(lambda s: op.exists(op.join(s, 'inputs')))
 
 
-def prepare(testfile, output):
+def _prepare(testfile, outputdir):
     with open(testfile) as f:
         test_spec = yaml.load(f)
     lgr.debug("Loaded test spec: %s", test_spec)
     # TODO: validate test schema
     # we will allow to override for now
-    if not os.path.exists(output):
-        os.makedirs(output)
-    gear_indir = op.join(output, GEAR_INPUTS_DIR)
-    gear_outdir = op.join(output, GEAR_OUTPUT_DIR)
+    if not os.path.exists(outputdir):
+        os.makedirs(outputdir)
+    gear_indir = op.join(outputdir, GEAR_INPUTS_DIR)
+    gear_outdir = op.join(outputdir, GEAR_OUTPUT_DIR)
     for d in gear_indir, gear_outdir:
         if not os.path.exists(str(d)):
             os.makedirs(str(d))
@@ -60,7 +60,7 @@ def prepare(testfile, output):
 
     # Generate config
     lgr.debug(" generating config.json")
-    with open(op.join(output, 'config.json'), 'w') as f:
+    with open(op.join(outputdir, 'config.json'), 'w') as f:
         # needs to be nested within 'config' item AFAIK
         json.dump(
             {
@@ -83,8 +83,10 @@ def get_files(d):
     return set(r)
 
 
-def check(testfile, output):
+def _check(testfile, outputdir):
     """Given a testfile spec and output directory, perform all the tests
+
+    ATM would just compare produced outputs to the target ones 1-to-1
     """
     # TODO: ATM just a basic comparator of files (without even subdirs etc)
     assert testfile.endswith('.yaml')
@@ -93,7 +95,7 @@ def check(testfile, output):
     # TODO: later all tests might be just based on "fingerprints" so no
     # target files might be needed
     target_files = get_files(target) if os.path.exists(target) else []
-    output_files = get_files(op.join(output, GEAR_OUTPUT_DIR))
+    output_files = get_files(op.join(outputdir, GEAR_OUTPUT_DIR))
     #import pdb; pdb.set_trace()
     only_in_output = output_files - target_files
     if only_in_output:
@@ -103,19 +105,27 @@ def check(testfile, output):
         raise AssertionError("Expected files were not found in output: %s"
                              % only_in_target)
     for f in target_files:
+        # verify the content match
         pass
 
 
 # CLI
-@cli.command()
-@click.argument('testfile')  # , help='Directory with the spec.py and tests/, ...')
-@click.argument('output')  # , help='Output directory.  Will be created if does not exist')
-def prepare_test(*args, **kwargs):
-    return prepare(*args, **kwargs)
+
+@cli.group('test')
+def grp():
+    """Commands to assist with the tests"""
+    pass
+
+@grp.command(short_help="Prepare a test case")
+@click.argument('testfile', type=click.Path(exists=True))  #, doc='File with test specification')
+@click.argument('outputdir')  #, doc='Output directory.  Will be created if does not exist')
+def prepare(*args, **kwargs):
+    """Prepare a test case: inputs, config.json, etc"""
+    return _prepare(*args, **kwargs)
 
 
-@cli.command()
-@click.argument('testfile')  # , help='Directory with the spec.py and tests/, ...')
-@click.argument('output')  # , help='Output directory.  Will be created if does not exist')
-def check_test(*args, **kwargs):
-    return check(*args, **kwargs)
+@grp.command(short_help="Check the results for a ran test")
+@click.argument('testfile', type=click.Path(exists=True))  #, doc='File with test specification')
+@click.argument('outputdir', type=click.Path(exists=True))  #, doc='Output directory.  Will be created if does not exist')
+def check(*args, **kwargs):
+    return _check(*args, **kwargs)
