@@ -296,11 +296,11 @@ ENV LC_ALL C.UTF-8
 RUN apt-get clean
 %(pip_line)s
     """
-    # TEMP do it here for now since it is volatile
-    template += """
+
+        # TEMP do it here for now since it is volatile
+        template += """
 RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo "6"
 RUN pip install -e /srv/gearificator
-
 """
     template += """
 COPY run ${FLYWHEEL}/run
