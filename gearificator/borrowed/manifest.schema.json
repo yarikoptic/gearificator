@@ -12,6 +12,13 @@
 			],
 			"description": "A schema directive."
 		},
+		"config-directive": {
+			"allOf": [
+				{"$ref": "http://json-schema.org/draft-04/schema"},
+				{ "not": {"required": ["default", "optional"]} }
+			],
+			"description": "A config schema directive."
+		},
 		"uriOrEmpty": {
 			"type": "string",
 			"maxLength": 1000,
@@ -34,12 +41,17 @@
 			"maxLength": 100,
 			"description": "(optional) The maintainer of this gear. Can be used to distinguish the algorithm author from the gear maintainer."
 		},
+		"cite": {
+			"type": "string",
+			"maxLength": 5000,
+			"description": "(optional) Any citations relevant to the algorithm(s) or work present in the gear."
+		},
 		"config": {
 			"type": "object",
 			"additionalProperties": {
-				"$ref": "#/definitions/directive"
+				"$ref": "#/definitions/config-directive"
 			},
-			"description": "Schema snippets desribing the options this gear consumes. Not currently processed."
+			"description": "Schema snippets describing the options this gear consumes. Not currently processed."
 		},
 		"custom": {
 			"type": "object",
@@ -48,7 +60,7 @@
 		"description": {
 			"type": "string",
 			"maxLength": 5000,
-			"description": "A brief description of the gear's purpose. Ideally 1-4 sentances."
+			"description": "A brief description of the gear's purpose. Ideally 1-4 sentences."
 		},
 		"environment": {
 			"type": "object",
@@ -66,7 +78,7 @@
 				"properties": {
 					"base": {
 						"type": "string",
-						"enum": [ "file", "api-key" ],
+						"enum": [ "file", "api-key", "context" ],
 						"description": "The type of gear input."
 					},
 					"description": {
@@ -85,10 +97,23 @@
 			},
 			"description": "Schema snippets describing the inputs this gear consumes."
 		},
+		"capabilities": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"description": "A set of features the gear requires to run (for example, networking)."
+		},
 		"label": {
 			"type": "string",
 			"maxLength": 100,
 			"description": "The human-friendly name of this gear."
+		},
+		"capabilities": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
 		},
 		"license": {
 			"type": "string",

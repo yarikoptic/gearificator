@@ -95,7 +95,7 @@ def _check(testfile, outputdir):
     # target = op.join(target, 'output') # ??? do we need output there???
     # TODO: later all tests might be just based on "fingerprints" so no
     # target files might be needed
-    target_files = get_files(target) if os.path.exists(target) else []
+    target_files = get_files(target) if os.path.exists(target) else set()
     output_files = get_files(op.join(outputdir, GEAR_OUTPUT_DIR))
     #import pdb; pdb.set_trace()
     only_in_output = output_files - target_files

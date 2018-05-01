@@ -246,3 +246,10 @@ all/any of them
 ** BIDS 
 
 based on metadata 
+
+** TODO seems schema (fw) does not allow optional to be there at all (even with "false" value) if default is given
+
+$> fw gear upload --category analysis
+Checking that gear is ready to upload...
+(500) {u'required': [u'default', u'optional']} is not allowed for {u'default': u'NIFTI_GZ', u'type': u'string', u'enum': [u'NIFTI_PAIR', u'NIFTI_PAIR_GZ', u'NIFTI_GZ', u'NIFTI'], u'optional': False, u'description': u'FSL output type [default=NIFTI_GZ]'}
+

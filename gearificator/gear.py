@@ -61,8 +61,7 @@ def subprocess_call(cmd, cwd=None, logsdir=None, env=None):
             open(f).read() for f in [log_stdout_path, log_stderr_path]
         ]
     finally:
-        if delete_logs:
-            shutil.rmtree(logsdir)
+        pass
     if exit_code:
         # TODO: make custom one to return outs
         raise RuntimeError(
@@ -71,6 +70,11 @@ def subprocess_call(cmd, cwd=None, logsdir=None, env=None):
                     lambda x: "'%s'" % x, cmd))  # to avoid u''
                if isinstance(cmd, (list, tuple)) else cmd,
                cwd, exit_code, log_stderr_path))
+    else:
+        # delete logs only if clear since otherwise nothing to inspect above
+        if delete_logs:
+            shutil.rmtree(logsdir)
+
     lgr.debug(" finished running with out=%s err=%s", *outs)
     return outs
 
@@ -271,7 +275,7 @@ RUN apt-get update && \\
 # TODO:  gearificator prepare-docker recipename_or_url
 # cons: would somewhat loose cached steps (pre-installation, etc)
 # For now -- entire manual template
-RUN eatmydata apt-get update && \\
+RUN eatmydata apt-get update && echo "count 1" && \\
     eatmydata apt-get install -y --no-install-recommends python-pip %(deb_packages_line)s
 
 # Download/Install gearificator suite

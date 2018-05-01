@@ -103,6 +103,9 @@ def analyze_spec(spec_cls, defaults={}):
                 trait_rec['optional'] = True
                 # TODO: later we might want to explicitly store them in custom to
                 # deal with them somehow more wisely
+            if 'optional' in trait_rec and 'default' in trait_rec:
+                # if default is set - there should be no optional
+                trait_rec.pop('optional')
         if trait_rec is None:
             lgr.warning('Handler returned None for %s of trait %s', opt, trait)
         else:
