@@ -126,6 +126,7 @@ def create_gear(obj,
                 deb_packages=[],
                 pip_packages=[],
                 source_files=[],
+                prepend_paths=[],
                 dummy=False,
                 base_image=None,
                 # TODO:
@@ -215,6 +216,7 @@ def create_gear(obj,
     gear_spec['run'] = create_run(
         os.path.join(outdir, 'run'),
         source_files=source_files,
+        prepend_paths=prepend_paths
     )
 
     # Create a dedicated Dockerfile
@@ -319,7 +321,7 @@ ENTRYPOINT ["/flywheel/v0/run"]
     return content
 
 
-def create_run(fname, source_files):
+def create_run(fname, source_files, prepend_paths=None):
     """Create the mighty "run" file which would be exactly the same in all of them
     """
     content = """\
@@ -333,6 +335,9 @@ set -eu
     if source_files:
         for f in source_files:
             content += '. %s\n' % f
+
+    if prepend_paths:
+        content += 'export PATH=%s:$PATH\n' % (':'.join(prepend_paths))
 
     # Finally actually run the thing
     content += "python -m gearificator \"$@\"\n"

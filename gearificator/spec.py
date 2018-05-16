@@ -116,7 +116,7 @@ def get_gear_dir(path):
     interest and convert into directories
     """
     # TODO: figure out a better/more reliable way
-    comps = filter(lambda p: p not in {"interfaces", "preprocess", "registration"},
+    comps = filter(lambda p: p not in {"interfaces"},
                    path.split('.'))
     return op.join(comps)
 
@@ -211,14 +211,13 @@ def _process(
                 except SyntaxError:
                     # some grave error -- blow
                     raise
-                # except Exception as e:
-                #     import pdb; pdb.set_trace()
-                #     raise SkipProcessing("ERROR happened: %s" % str(e))
+                except Exception as e:
+                    raise SkipProcessing("ERROR happened: %s" % str(e))
 
             if run_tests != "skip":
                 # TODO Move away and generalize
-                testsdir = op.join(params['path'], 'tests', geardir)
-                tests = glob(op.join(testsdir, 'test_*.yaml'))
+                testspath = op.join(gearpath, 'tests')
+                tests = glob(op.join(testspath, '*.yaml'))
                 if not tests:
                     lgr.warning("TESTS: no tests were found")
                 else:
@@ -233,7 +232,7 @@ def _process(
                         if run_testsdir is not None:
                             testdir = tempfile.mkdtemp(prefix='gf_test-%d_' % itest)
                         else:
-                            # create one under outputdir replicating testsdir hierarchy
+                            # create one under outputdir replicating testspath hierarchy
 
                             testdir = op.join(
                                 params['path'], 'tests-run', geardir, testname)
@@ -318,7 +317,7 @@ def grp():
 @grp.command()
 @click.option('--regex', help='Regular expression to process only the matching paths')
 @click.option('--run-tests',
-              type=click.Choice(['skip', 'native', 'gear']),
+              type=click.Choice(['skip', 'native', 'gear']), default='gear',
               help='Run tests if present.  "native" runs on the host and "gear" '
                    'via the dockerized gear')
 @click.option('--gear', type=click.Choice(['spec', 'skip', 'dummy', 'build']),
