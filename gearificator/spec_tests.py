@@ -77,10 +77,9 @@ def _prepare(testfile, outputdir):
 def get_files(d):
     r = []
     for path, dnames, fnames in os.walk(d):
-        #r.extend([os.path.join(path, x) for x in fnames])
-        # we need relative paths but probably later would need to sill handle
-        # subdirs etc
-        r.extend(fnames) # [os.path.join(path, x) for x in fnames])
+        # Relative to d path
+        dname = op.relpath(path, d)
+        r.extend([op.join(dname, f) for f in fnames])
     return set(r)
 
 
@@ -97,7 +96,6 @@ def _check(testfile, outputdir):
     # target files might be needed
     target_files = get_files(target) if os.path.exists(target) else set()
     output_files = get_files(op.join(outputdir, GEAR_OUTPUT_DIR))
-    #import pdb; pdb.set_trace()
     only_in_output = output_files - target_files
     if only_in_output:
         raise AssertionError("Unexpected files in output: %s" % only_in_output)

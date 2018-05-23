@@ -153,11 +153,6 @@ E                u'type': u'int'}
   officially there is v0/input and v0/output (no s)
 
 * TODO List handling.   will not specify default empty []
-* TODO exchange -- should I aim to provide 'gearificator/' under https://github.com/flywheel-io/exchange/tree/master/gears
-
-  - should contain just manifests renamed into name.json
-  - could I also contain there the actual gear "sources" (Dockerfile, run) somewhere, e.g. under name/ subdirectory
-
 * DISCUSSION -- it seems that among gears examples I looked at "optional" only used among "inputs" and not among "config"
 
 this might explain why web ui did not allow me to go forward until I actually entered a value for an optional config -- it was not "warranted"
@@ -252,4 +247,10 @@ based on metadata
 $> fw gear upload --category analysis
 Checking that gear is ready to upload...
 (500) {u'required': [u'default', u'optional']} is not allowed for {u'default': u'NIFTI_GZ', u'type': u'string', u'enum': [u'NIFTI_PAIR', u'NIFTI_PAIR_GZ', u'NIFTI_GZ', u'NIFTI'], u'optional': False, u'description': u'FSL output type [default=NIFTI_GZ]'}
+
+* TODO exchange -- should I aim to provide 'gearificator/' under https://github.com/flywheel-io/exchange/tree/master/gears
+
+  - should contain just manifests renamed into name.json
+  - could I also contain there the actual gear "sources" (Dockerfile, run) somewhere, e.g. under name/ subdirectory
+  - I need to submit PRs with new/changed manifest.json copied under gear name, with that custom-image with versioned tag
 

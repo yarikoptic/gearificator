@@ -86,7 +86,9 @@ def run_gear_native(gearpath, testdir):
     #logsdir = op.join(testdir, '.gearificator', 'logs')
     logsdir = op.join(testdir, 'logs')
     outs = subprocess_call(
-        './run', cwd=testdir, logsdir=logsdir,
+        './run',
+        cwd=testdir,
+        logsdir=logsdir,
         env=dict(os.environ, FLYWHEEL='.'))  # op.abspath(testdir)),)
     return outs
 
@@ -179,6 +181,10 @@ def create_gear(obj,
         MANIFEST_CUSTOM_INTERFACE: '%s:%s' % (obj.__module__, obj.__name__),
         MANIFEST_CUSTOM_OUTPUTS: outputs or {}
     }
+    if hasattr(backend, 'get_suite'):
+        custom["flywheel"] = {
+            "suite": backend.get_suite(obj)
+        }
 
     # category is not part of the manifest (yet) so we will pass it into custom
     if 'category' in manifest:

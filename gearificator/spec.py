@@ -211,8 +211,9 @@ def _process(
                 except SyntaxError:
                     # some grave error -- blow
                     raise
-                except Exception as e:
-                    raise SkipProcessing("ERROR happened: %s" % str(e))
+                # except Exception as e:
+                #     lgr.warning("ERROR happened: %s" % str(e))
+                #     raise SkipProcessing("ERROR happened: %s" % str(e))
 
             if run_tests != "skip":
                 # TODO Move away and generalize

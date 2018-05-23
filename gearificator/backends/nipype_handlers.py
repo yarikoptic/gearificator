@@ -151,9 +151,19 @@ def _MultiPath(orig_type, trait, **kwargs):
 def InputMultiPath(trait, **kwargs):
     return _MultiPath('InputMultiPath', trait, **kwargs)
 
+# typically it is InputMultiPath (I guess it was all refactored in nipype) but since just bound to
+# InputMultiObject we do not know that semantic unfortunately.
+# That one in turn largely is a subclass of List with additional validation
+def InputMultiObject(trait, **kwargs):
+    return InputMultiPath(trait, **kwargs)
+
 
 def OutputMultiPath(trait, **kwargs):
     return _MultiPath('OutputMultiPath', trait, **kwargs)
+
+
+def OutputMultiObject(trait, **kwargs):
+    return OutputMultiPath(trait, **kwargs)
 
 
 def File(trait, **kwargs):

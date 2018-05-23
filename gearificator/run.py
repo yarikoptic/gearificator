@@ -29,6 +29,7 @@ import os
 import os.path as op
 
 import sys
+import shutil
 from glob import glob
 from importlib import import_module
 from os.path import (
@@ -130,7 +131,32 @@ def run(manifest, config, indir, outdir):
         pass
 
     # Handle outputs
-    # Check if anything under outdir
+    # Some interfaces, e.g. fsl's FAST, would dump outputs within input directory
+    # alongside original file.  So we need to move them under outdir
+    for output_field in out.outputs.traits():
+        try:
+            output_files = getattr(out.outputs, output_field)
+        except AttributeError:
+            # some are some fancy events which can't be read etc
+            continue
+        if not output_files:
+            continue
+        if not isinstance(output_files, (list, tuple)):
+            output_files = [output_files]
+        for output_file in output_files:
+            # TODO: should for any output file we do the same, not only the
+            # one under indir?
+            if output_file.startswith(indir):
+                # need to move under outdir and flatten since not sure
+                # if flywheel consumes hierarchies there
+                #output_relpath = op.relpath(output_file, indir)
+                target_dir = op.join(outdir, output_field)
+                if not op.exists(target_dir):
+                    os.mkdir(target_dir)
+                target_name = op.join(target_dir, op.basename(output_file))
+                lgr.debug("Moving %s under %s", output_file, outdir)
+                shutil.move(output_file, op.join(outdir, target_name))
+
     # TODO: ATM only flat
     # outputs = glob(opj(outdir, '*'))
     # if not outputs:

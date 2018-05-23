@@ -110,7 +110,10 @@ def analyze_spec(spec_cls, defaults={}):
             lgr.warning('Handler returned None for %s of trait %s', opt, trait)
         else:
             # Directory could be an output directory name specification  TODO figure out what to eat it with?
-            if handler_name in {'File', 'InputMultiPath', 'OutputMultiPath'}:  # , 'Directory'}:
+            if handler_name in {
+                'File',
+                'InputMultiPath', 'OutputMultiPath', 'InputMultiObject', 'OutputMultiObject'
+                }:  # , 'Directory'}:
                 inputs[opt] = trait_rec
             else:
                 # we need to massage it a bit since apparently web ui does not
@@ -134,6 +137,7 @@ def get_trait_handler(trait):
     handler_name = handler_name.replace('nipype.interfaces.base.', 'nipype_')
     handler = getattr(nipype_handlers, handler_name, None)
     if not handler:
+        import pdb; pdb.set_trace()
         raise ValueError("No handler for %s" % handler_name)
     return handler, handler_name
 
@@ -192,3 +196,12 @@ def extract_manifest(cls, defaults={}):
     # TODO:  license -- we should add the license for the piece?
 
     return manifest, outputs
+
+
+def get_suite(obj):
+    """Given the object deduce the "suite" for the Flywheel spec for groupping
+    """
+    names = obj.__module__.split('.')
+    assert names[0] == 'nipype'
+    assert names[1] == 'interfaces'
+    return "nipype:%s" % names[2]
