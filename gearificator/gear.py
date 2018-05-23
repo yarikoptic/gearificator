@@ -120,6 +120,21 @@ def build_gear(buildir, docker_image):
     )
 
 
+def docker_push_gear(docker_image):
+    lgr.info("Pushing gear docker image %s", docker_image)
+    return subprocess_call(
+        ['docker', 'push', docker_image]
+    )
+
+
+def fw_upload_gear(geardir):
+    lgr.info("fw gear upload %s", geardir)
+    return subprocess_call(
+            ['fw', 'gear', 'upload'],
+            cwd=geardir,
+    )
+
+
 def create_gear(obj,
                 outdir,
                 manifest_fields={}, defaults={},
@@ -195,7 +210,7 @@ def create_gear(obj,
     docker_image = custom.get('docker_image')
     if not docker_image:
         custom['docker-image'] = docker_image = \
-            '%s:%s' % (name, version)
+            'gearificator/%s:%s' % (name, version)
             #'%s/%s:%s' % (DOCKER_IMAGE_REPO, name, version)
     # to please gear-buidler -- duplicate for now
     custom['gear-builder'] = {'image': custom['docker-image']}
@@ -289,7 +304,7 @@ RUN eatmydata apt-get update && echo "count 1" && \\
 # Download/Install gearificator suite
 # TODO  install git if we do via git
 RUN eatmydata apt-get install -y git python-setuptools
-# TEMPMOVE RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo "6"
+# TEMPMOVE RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo 7
 # TEMPMOVE RUN pip install -e /srv/gearificator
 """
     template += """
@@ -311,7 +326,7 @@ RUN apt-get clean
 
         # TEMP do it here for now since it is volatile
         template += """
-RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo "6"
+RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo 7
 RUN pip install -e /srv/gearificator
 """
     template += """

@@ -13,7 +13,10 @@ from os.path import join as opj
 from inspect import ismodule
 from itertools import chain
 
-from gearificator.gear import run_gear_native, run_gear_docker, create_gear
+from .gear import (
+    run_gear_native, run_gear_docker, create_gear, docker_push_gear,
+    fw_upload_gear,
+)
 from . import get_logger
 from .utils import import_module_from_file
 
@@ -129,7 +132,6 @@ def _process(
         run_testsdir=None,
         gear=None,
         toppath=None,
-        actions=None,
         params={
             'recurse': False
         }
@@ -142,17 +144,17 @@ def _process(
     outputdir: str
     regex: str, optional
       Regular expression as to which paths to process
-    actions: list of str
-      What actions to perform, known ones: ...
     include: dict, optional
     manifest: dict, optional
     params: dict, optional
+    gear: tuple of str
+      What actions to perform to the gear, known ones: ...
 
     Returns
     -------
     None
     """
-
+    gear = gear or ()
     lgr.log(5, toppath)
     # first process all % entries
     params_update = params.__class__()
@@ -196,7 +198,7 @@ def _process(
             gearpath = opj(outputdir, geardir)
 
             gear_report = None
-            if gear != "skip":
+            if 'skip' not in gear:
                 try:
                     gear_report = create_gear(
                         obj,
@@ -204,7 +206,7 @@ def _process(
                         # Additional fields for the
                         manifest_fields=new_params.get('manifest', {}),
                         build_docker=gear != "spec",  # For now
-                        dummy=gear == 'dummy',
+                        dummy='dummy' in gear,
                         **new_params.get('params', {})
                     )
                     lgr.info("%s gear generated", toppath)
@@ -265,6 +267,12 @@ def _process(
                         # os.system("ls -lRa %s/*" % testdir)
                         pass
                 pass
+            if 'docker-push' in gear:
+                if not gear_report:
+                    raise ValueError("--gear option must not be 'skip'")
+                docker_push_gear(gear_report['docker_image'])
+            if 'fw-upload' in gear:
+                fw_upload_gear(gearpath)
         except SkipProcessing as exc:
             lgr.debug("SKIP(%s) %s", str(exc)[:100].replace('\n', ' '), toppath)
 
@@ -300,7 +308,6 @@ def _process(
                 run_tests=run_tests,
                 gear=gear,
                 toppath=new_path,
-                actions=actions,
                 params=new_params
         )
 
@@ -321,10 +328,11 @@ def grp():
               type=click.Choice(['skip', 'native', 'gear']), default='gear',
               help='Run tests if present.  "native" runs on the host and "gear" '
                    'via the dockerized gear')
-@click.option('--gear', type=click.Choice(['spec', 'skip', 'dummy', 'build']),
+@click.option('--gear', type=click.Choice(
+              ['spec', 'skip', 'dummy', 'build', 'docker-push', 'fw-upload']),
+              multiple=True,
               help="Either actuall build gear (dummy for testing UI or just spec "
-                   "or full) or just skip (and possibly just do the tests "
-                   "etc)")
+                   "or full) or just skip (and possibly just do the tests etc)")
 # @click.option('--docker', type=click.Choice(['skip', 'dummy', 'build']),
 #               help='Either actually build a docker image. "dummy" would generate'
 #                    ' a minimalistic image useful for quick upload to test '
