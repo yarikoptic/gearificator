@@ -22,7 +22,7 @@ from gearificator.consts import (
     GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_CONFIG_FILENAME,
 )
 from gearificator.exceptions import UnknownBackend
-from gearificator.run import load_interface_from_manifest
+from gearificator.run import load_interface_from_manifest, get_manifest
 from gearificator.validator import validate_manifest
 
 lgr = get_logger('gear')
@@ -133,6 +133,28 @@ def fw_upload_gear(geardir):
             ['fw', 'gear', 'upload'],
             cwd=geardir,
     )
+
+
+def copy_to_exchange(geardir, exchangedir):
+    """
+
+    Parameters
+    ----------
+    geardir
+    exchangedir
+
+    Returns
+    -------
+
+    """
+    outpath = op.normpath(op.join(exchangedir, 'gears', 'gearificator'))
+    if not op.exists(outpath):
+        os.mkdir(outpath)
+    manifestpath = op.join(geardir, GEAR_MANIFEST_FILENAME)
+    manifest = get_manifest(manifestpath)
+    outname = op.join(outpath, '%(name)s.json' % manifest)
+    lgr.info("Copying manifest into %s", outname)
+    shutil.copy(manifestpath, outname)
 
 
 def create_gear(obj,

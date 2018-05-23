@@ -15,7 +15,7 @@ from itertools import chain
 
 from .gear import (
     run_gear_native, run_gear_docker, create_gear, docker_push_gear,
-    fw_upload_gear,
+    fw_upload_gear, copy_to_exchange
 )
 from . import get_logger
 from .utils import import_module_from_file
@@ -198,7 +198,7 @@ def _process(
             gearpath = opj(outputdir, geardir)
 
             gear_report = None
-            if 'skip' not in gear:
+            if 'skip-build' not in gear:
                 try:
                     gear_report = create_gear(
                         obj,
@@ -273,6 +273,9 @@ def _process(
                 docker_push_gear(gear_report['docker_image'])
             if 'fw-upload' in gear:
                 fw_upload_gear(gearpath)
+            if 'exchange' in gear:
+                for exchange in glob(opj(outputdir, '..', 'exchanges', '*')):
+                    copy_to_exchange(gearpath, exchange)
         except SkipProcessing as exc:
             lgr.debug("SKIP(%s) %s", str(exc)[:100].replace('\n', ' '), toppath)
 
@@ -329,7 +332,7 @@ def grp():
               help='Run tests if present.  "native" runs on the host and "gear" '
                    'via the dockerized gear')
 @click.option('--gear', type=click.Choice(
-              ['spec', 'skip', 'dummy', 'build', 'docker-push', 'fw-upload']),
+              ['spec', 'skip-build', 'dummy', 'build', 'docker-push', 'fw-upload', 'exchange']),
               multiple=True,
               help="Either actuall build gear (dummy for testing UI or just spec "
                    "or full) or just skip (and possibly just do the tests etc)")
