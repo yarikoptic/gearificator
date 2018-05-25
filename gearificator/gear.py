@@ -218,10 +218,6 @@ def create_gear(obj,
         MANIFEST_CUSTOM_INTERFACE: '%s:%s' % (obj.__module__, obj.__name__),
         MANIFEST_CUSTOM_OUTPUTS: outputs or {}
     }
-    if hasattr(backend, 'get_suite'):
-        custom["flywheel"] = {
-            "suite": backend.get_suite(obj)
-        }
 
     # category is not part of the manifest (yet) so we will pass it into custom
     if 'category' in manifest:
@@ -245,8 +241,7 @@ def create_gear(obj,
 
     # Save manifest
     manifest_fname = os.path.join(outdir, GEAR_MANIFEST_FILENAME)
-    with open(manifest_fname, 'w') as f:
-        json.dump(manifest, f, indent=2)
+    save_manifest(manifest, manifest_fname)
 
     if validate:
         validate_manifest(manifest_fname)
@@ -277,7 +272,21 @@ def create_gear(obj,
         out, err = build_gear(outdir, docker_image)
         gear_spec['docker_build_stdout'] = out
         gear_spec['docker_build_stderr'] = err
+
+    if hasattr(backend, 'get_suite'):
+        custom["flywheel"] = {
+            "suite": backend.get_suite(obj, docker_image)
+        }
+        # and we resave it again, so inside gear docker it might actually differ
+        # unfortunately, but shouldn't matter I guess
+        save_manifest(manifest, manifest_fname)
+
     return gear_spec
+
+
+def save_manifest(manifest, manifest_fname):
+    with open(manifest_fname, 'w') as f:
+        json.dump(manifest, f, indent=2, separators=(',', ': '))
 
 
 def create_dockerfile(

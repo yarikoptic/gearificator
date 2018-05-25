@@ -198,10 +198,45 @@ def extract_manifest(cls, defaults={}):
     return manifest, outputs
 
 
-def get_suite(obj):
+def get_suite(obj, docker_image=None):
     """Given the object deduce the "suite" for the Flywheel spec for groupping
     """
     names = obj.__module__.split('.')
     assert names[0] == 'nipype'
     assert names[1] == 'interfaces'
-    return "nipype:%s" % names[2]
+
+    suite = "Nipype %s" % names[2].upper()
+    if docker_image:
+        # TODO: add a check if docker image exists already
+        # and if not -- add "unknown" as the version
+        from ..gear import subprocess_call
+        dpkg_output, err = subprocess_call(
+            ['docker', 'run', '--rm', '--entrypoint=dpkg', docker_image, '-l',
+             {'fsl': 'fsl-core'}.get(names[2].lower(), names[2].lower())
+             ]
+        )
+
+        suite += " %s" \
+            % get_pkg_version(dpkg_output).split(':', 1)[-1].split('.')[0]
+    return suite
+
+
+def get_pkg_version(dpkg_output):
+    hits = [l for l in dpkg_output.splitlines() if l.startswith('ii ')]
+    assert len(hits) == 1
+    return hits[0].split()[2]
+
+
+def test_get_pkg_version():
+    assert get_pkg_version("""Desired=U
+||/ Name           Version        Architecture Description
++++-==============-==============-============-=========================================
+ii  fsl-core       5.0.9-4~nd90+1 all          metapackage for the latest version of FSL
+    """) == "5.0.9-4~nd90+1"
+    assert get_pkg_version("ii  fsl-core       1:6.0.9-4") == "1:6.0.9-4"
+
+
+def test_get_suite():
+    # temp one
+    from nipype.interfaces.fsl.preprocess import ApplyWarp
+    assert get_suite(ApplyWarp, 'gearificator/nipype-interfaces-fsl-preprocess-fast:0.0.2.nipype.1.0.3.1')
