@@ -63,7 +63,7 @@ def get_version():
     return ".nipype.%s" % nipype.__version__
 
 
-def analyze_spec(spec_cls, defaults={}):
+def analyze_spec(spec_cls, order_first=None, defaults={}):
     """Given the Spec class, extract the instances and interesting fields"""
     spec = spec_cls()
     config = OrderedDict()
@@ -124,7 +124,30 @@ def analyze_spec(spec_cls, defaults={}):
                 #     if 'default' not in trait_rec:
                 #         trait_rec['default'] = None
                 config[opt] = trait_rec
+    config = get_entries_ordered(config)
+    inputs = get_entries_ordered(inputs, order_first)
     return config, inputs
+
+
+def get_entries_ordered(od, order_first=None):
+    """Get OrderedDict sorted so non-optional come first
+
+    Parameters
+    ----------
+    order_first: str
+      Prefix to place first as well (within optional or not group)
+
+    """
+    if order_first is not None:
+        key = lambda x: (bool(x[1].get('optional')), x[0].startswith(order_first), x[0])
+    else:
+        key = lambda x: (bool(x[1].get('optional')), x[0])
+    return od.__class__(
+        sorted(
+            od.items(),
+            key=key
+        )
+    )
 
 
 def get_trait_handler(trait):
@@ -155,10 +178,10 @@ def extract_manifest(cls, defaults={}):
 
     """
     # will be a mix of options and "inputs" (identified by using Files)
-    config, inputs = analyze_spec(cls.input_spec, defaults=defaults)
+    config, inputs = analyze_spec(cls.input_spec, defaults=defaults, order_first='in')
     #  Not yet sure if actually needed right here since outputs are not
     #  part of the manifest
-    config_out, outputs = analyze_spec(cls.output_spec, defaults=defaults)
+    config_out, outputs = analyze_spec(cls.output_spec, defaults=defaults, order_first='out')
     if config_out:
         assert False, "expecting only files in the output, not config settings. Got %s" % config_out
     # strip outputs of unneeded fields
