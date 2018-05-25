@@ -78,6 +78,10 @@ def analyze_spec(spec_cls, order_first=None, defaults={}):
             'environ',
         }:
             continue
+        if opt.endswith('_trait'):
+            # those which are used later within actual config
+            # options definitions
+            continue
         try:
             handler, handler_name = get_trait_handler(trait)
         except ValueError as exc:

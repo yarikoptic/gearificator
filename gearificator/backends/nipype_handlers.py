@@ -38,8 +38,10 @@ def _get_rec(gear_type, trait, default=None, cast=lambda x: x, **kwargs):
     elif trait.default is not None:
         if trait.default_kind == 'list' and trait.default == []:
             # just nothing for now
+            # TODO raise NotImplementedError('list')
             pass
         elif trait.default_kind != 'value':
+            # TODO raise NotImplementedError(trait.default_kind)
             lgr.warning("Not implemented for default_kind=%s",
                         trait.default_kind)
         else:
@@ -190,3 +192,88 @@ def Directory(trait, **kwargs):
     # return rec
     return File(trait, **kwargs)
 
+
+def print_obj(o, include=lambda x: not x.startswith('_'), pref='', memo=None):
+    if len(pref) > 3:
+        print('----------------- CUT ---------------')
+        # prevent inf
+        return
+    memo = memo or set()
+    if isinstance(o, (int, float, str, bytes, list, tuple)):
+        print(o)
+        return
+    for f in dir(o):
+        if f == 'clone':
+            continue
+        if include(f):
+            #print("%s: %s" % (f, print_obj(getattr(o, f))))
+
+            v = getattr(o, f)
+            note = ''
+            descend = True
+            if hasattr(v, '__call__'):
+                try:
+                    v = v()
+                    note = "CALL(): "
+                except Exception as exc:
+                    note = "CALL ERROR" # : %s" % exc
+                    descend = False
+            print("%s%s: %s%s" % (pref, f, note, v))
+            # if isinstance(v, (tuple, list)):
+            #     for i in v:
+            #         if id(i) in memo:
+            #             print(pref + '--')
+            #             continue
+            #         memo.add(id(i))
+            #         print_obj(i, include=include, pref=pref+' ', memo=memo)
+            if descend and ('trait' in str(v)) and id(v) not in memo:
+                memo.add(id(v))
+                print_obj(v, include=include, pref=pref+' ', memo=memo)
+
+
+def TraitCompound(trait, **kwargs):
+
+    handler = trait.handler
+    subhandlers = handler.handlers
+    subhandler_types = {t.__class__ for t in subhandlers}
+    # For Either we should get special handling of various cases
+    # - Bool, File() -- typical to signal output (can't check here
+    #   since no name :-/.  But resort to bool just as a flag
+    # - Tuples of various kinds . Could be a part of the list
+    #    e.g. in antsRegistration to collect parameters of
+    #    transformations for each stage
+    if len(subhandler_types) == 1:
+        # all the same type
+        subhandler_type = subhandler_types.pop().__name__
+        if subhandler_type == 'Tuple':
+            # TODO: unfortunately those aren't just Tuple traits any more
+            # grecs = [Tuple(t) for t in subhandlers]
+            # Could not figure out any other way but just get the default
+            # and their types
+            tuple_types = [
+                list({type(x).__name__ for x in subhandler.default_value})
+                for subhandler in subhandlers
+            ]
+            tuple_lens = [
+                len(subhandler.default_value) for subhandler in subhandlers
+            ]
+            all_types = None
+            if max(len(t) for t in tuple_types) == 1:
+                all_types = set(sum(tuple_types, []))
+            if not (all_types and all_types.issubset({'int', 'float'})):
+                raise NotImplementedError("Do not know how to handle such collections of tuples")
+            if len(all_types) == 1:
+                types = all_types.pop()
+            else:
+                types = "int or float"
+            # 1. Generate the Tuple one giving a comment about the type of entries
+            # 2. Record the knowledge about above types/# elements discovery
+            #    into 'custom' somehow, so could be used for validation and
+            #    reconstruction
+            raise NotImplementedError
+    # - Trait, List(Trait) - ???
+    # - Trait -- a few, I guess just for consistency. So we will
+    #    just take the Trait
+    # - StringConstant, File() - eg moving_image_masks
+    import pdb; pdb.set_trace()
+    pass
