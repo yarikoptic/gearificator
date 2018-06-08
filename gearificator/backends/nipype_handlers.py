@@ -119,6 +119,7 @@ def Enum(trait, **kwargs):
 
 
 def List(trait, **kwargs):
+    raise NotImplementedError()  # Web UI still doesn't support them any sensible way
     if len(trait.inner_traits) != 1:
         raise ValueError(
             "Don't know yet how to treat a List trait with multiple types: %s"
@@ -270,10 +271,11 @@ def TraitCompound(trait, **kwargs):
             # 2. Record the knowledge about above types/# elements discovery
             #    into 'custom' somehow, so could be used for validation and
             #    reconstruction
-            raise NotImplementedError
+            raise NotImplementedError()
     # - Trait, List(Trait) - ???
     # - Trait -- a few, I guess just for consistency. So we will
     #    just take the Trait
     # - StringConstant, File() - eg moving_image_masks
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
+    raise NotImplementedError()
     pass
