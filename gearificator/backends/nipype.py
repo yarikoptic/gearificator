@@ -60,7 +60,10 @@ lgr = logging.getLogger('gearificator.nipype')
 
 def get_version():
     import nipype
-    return ".nipype.%s" % nipype.__version__
+    # versioning needs fixup, see https://github.com/nipy/nipype/issues/2613
+    # But actual version is the one in docker image, which is 1.0.3 ATM
+    # And we use git nipype only for docs fixups ATM
+    return ".nipype.%s" % "1.0.3"  # nipype.__version__
 
 
 def analyze_spec(spec_cls, order_first=None, defaults={}):
