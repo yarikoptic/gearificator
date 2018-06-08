@@ -17,7 +17,10 @@ import shutil
 from .cli_base import cli
 from .consts import \
     GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_MANIFEST_FILENAME
-from .utils import PathRoot
+from .utils import (
+    md5sum,
+    PathRoot
+)
 
 from . import get_logger
 lgr = get_logger('spec_tests')
@@ -103,9 +106,18 @@ def _check(testfile, outputdir):
     if only_in_target:
         raise AssertionError("Expected files were not found in output: %s"
                              % only_in_target)
+    mismatches = {}
     for f in target_files:
         # verify the content match
-        pass
+        target_md5 = md5sum(op.join(target, f))
+        output_md5 = md5sum(op.join(outputdir, 'output', f))
+        if target_md5 != output_md5:
+            mismatches[f] = (output_md5, target_md5)
+    if mismatches:
+        raise AssertionError(
+            "md5 mismatch on following files (output, target): %s"
+            % str(mismatches)
+        )
 
 
 # CLI

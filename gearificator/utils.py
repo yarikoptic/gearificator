@@ -195,3 +195,9 @@ class PathRoot(object):
         while path not in [os.path.pathsep, os.path.sep, ""]:
             yield path
             path = os.path.dirname(path)
+
+
+def md5sum(filename):
+    import hashlib
+    with open(filename, 'rb') as f:
+        return hashlib.md5(f.read()).hexdigest()
