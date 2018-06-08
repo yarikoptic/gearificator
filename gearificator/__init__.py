@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 from .version import __version__  # noqa
 # from .gearificator import *  # noqa
 
-__version__ = '0.0.2'
+from .version import __version__
 
 import logging
 
