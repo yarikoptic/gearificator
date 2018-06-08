@@ -58,12 +58,20 @@ import logging
 lgr = logging.getLogger('gearificator.nipype')
 
 
+def get_nipype_version():
+    import nipype
+    # versioning needs fixup, see https://github.com/nipy/nipype/issues/2613
+    # But actual version is the one in docker image, which is 1.0.3 ATM
+    # And we use git nipype only for docs fixups ATM
+    return "1.0.3"  # nipype.__version__
+
+
 def get_version():
     import nipype
     # versioning needs fixup, see https://github.com/nipy/nipype/issues/2613
     # But actual version is the one in docker image, which is 1.0.3 ATM
     # And we use git nipype only for docs fixups ATM
-    return ".nipype.%s" % "1.0.3"  # nipype.__version__
+    return ".nipype.%s" % get_nipype_version()
 
 
 def analyze_spec(spec_cls, order_first=None, defaults={}):
@@ -120,7 +128,10 @@ def analyze_spec(spec_cls, order_first=None, defaults={}):
             if handler_name in {
                 'File',
                 'InputMultiPath', 'OutputMultiPath', 'InputMultiObject', 'OutputMultiObject'
-                }:  # , 'Directory'}:
+                } and trait_rec.get('base') == 'file':  # , 'Directory'}:
+            #if trait_rec.get('base') == 'file':
+                # TODO: not necessarily for InputMultiPath -- it could be pointing to Str
+                # like in case of series_numbers in dcm2niix, so its base str not file then
                 inputs[opt] = trait_rec
             else:
                 # we need to massage it a bit since apparently web ui does not
@@ -222,7 +233,7 @@ def extract_manifest(cls, defaults={}):
     manifest['config'] = config or {}
     manifest['inputs'] = inputs or {}
 
-    manifest['url'] = "http://nipype.readthedocs.io/en/%s/interfaces/generated/interfaces.ants/registration.html" % nipype.__version__
+    manifest['url'] = "http://nipype.readthedocs.io/en/%s/interfaces/generated/interfaces.ants/registration.html" % get_nipype_version()
     # TODO:  license -- we should add the license for the piece?
 
     return manifest, outputs
@@ -242,7 +253,10 @@ def get_suite(obj, docker_image=None):
         from ..gear import subprocess_call
         dpkg_output, err = subprocess_call(
             ['docker', 'run', '--rm', '--entrypoint=dpkg', docker_image, '-l',
-             {'fsl': 'fsl-core'}.get(names[2].lower(), names[2].lower())
+             {
+                 'fsl': 'fsl-core',
+                 'dcm2nii': 'dcm2niix',
+             }.get(names[2].lower(), names[2].lower())
              ]
         )
 

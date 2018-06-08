@@ -180,12 +180,16 @@ def _process(
         try:
 
             obj = get_object_from_path(toppath)
-
             if regex and not re.search(regex, toppath):
                 raise SkipProcessing("regex")
-
             if 'include' in new_params and not new_params['include'](obj):
                 raise SkipProcessing("%%include")
+
+            if not obj.input_spec:
+                raise SkipProcessing("no input spec")
+            if not obj.output_spec:
+                raise SkipProcessing("no output spec")
+
 
             lgr.debug("%s process!", toppath)
 
@@ -213,6 +217,9 @@ def _process(
                 except SyntaxError:
                     # some grave error -- blow
                     raise
+                except NotImplementedError as exc:
+                    lgr.warning("Skipping: %s", exc)
+                    raise SkipProcessing("Not implemented yet")
                 # except Exception as e:
                 #     lgr.warning("ERROR happened: %s" % str(e))
                 #     raise SkipProcessing("ERROR happened: %s" % str(e))

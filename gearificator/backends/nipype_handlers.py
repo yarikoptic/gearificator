@@ -119,7 +119,7 @@ def Enum(trait, **kwargs):
 
 
 def List(trait, **kwargs):
-    raise NotImplementedError()  # Web UI still doesn't support them any sensible way
+    raise NotImplementedError("array - webui")  # Web UI still doesn't support them any sensible way
     if len(trait.inner_traits) != 1:
         raise ValueError(
             "Don't know yet how to treat a List trait with multiple types: %s"
@@ -141,11 +141,19 @@ def Tuple(trait, **kwargs):
 
 
 def _MultiPath(orig_type, trait, **kwargs):
+    # TODO: in general the idea is to allow for an Array here, typically
+    # of files, but could be other things
     inner_trait_types = {t.trait_type for t in trait.inner_traits}
     if len(inner_trait_types) == 1:
         inner_type = inner_trait_types.pop()
+        inner_name = inner_type.__class__.__name__
+        #import pdb; pdb.set_trace()
+        #print("INFO: %s %s" % (inner_type, inner_type.info()))
         # and we for now assume that one is enough!
-        rec = File(trait, **kwargs)
+        rec = {
+            'File': File,
+            'Str': Str
+        }[inner_name](trait, **kwargs)
     else:
         raise ValueError("Do not know how to deal with %s having multiple types" % orig_type)
     return rec
@@ -233,7 +241,7 @@ def print_obj(o, include=lambda x: not x.startswith('_'), pref='', memo=None):
 
 
 def TraitCompound(trait, **kwargs):
-
+    raise NotImplementedError("TraitCompound")
     handler = trait.handler
     subhandlers = handler.handlers
     subhandler_types = {t.__class__ for t in subhandlers}
@@ -277,5 +285,4 @@ def TraitCompound(trait, **kwargs):
     #    just take the Trait
     # - StringConstant, File() - eg moving_image_masks
     #import pdb; pdb.set_trace()
-    raise NotImplementedError()
     pass

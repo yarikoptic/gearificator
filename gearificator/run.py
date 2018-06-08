@@ -113,6 +113,9 @@ def run(manifest, config, indir, outdir):
     # should we wrap it into a node?
     # it has .base_dir specification
     interface = None
+    # TODO: we could check if config corresponds to manifest.  If not
+    # (e.g. parameter in config is not known to interface/manifest config),
+    # then it seems that nipype blows with cryptic/unrelated error message
     try:
         if not os.path.exists(outdir):
             os.makedirs(outdir)  # assure that exists
@@ -216,14 +219,15 @@ def get_interface(manifest, config, indir, outdir):
             kwargs[c] = v['default']
 
     # Further configuration
-    for c, v in config.items():
-        # could be a config item
-        # if c not in inputs:
-        #     lgr.warning(
-        #         "%s is not known to inputs, which know only about %s",
-        #         c, inputs.keys()
-        #     )
-        kwargs[c] = v
+    if config:
+        for c, v in config.items():
+            # could be a config item
+            # if c not in inputs:
+            #     lgr.warning(
+            #         "%s is not known to inputs, which know only about %s",
+            #         c, inputs.keys()
+            #     )
+            kwargs[c] = v
 
     # Treat None's which could be our annotation for not specifying any value
     # and resort to the default imposed by the tool
@@ -299,6 +303,8 @@ def main(*args, **kwargs):
 
     def pprint_dict(title, d, skip_types=None):
         print(title + ":")
+        if not d:  # could be None
+            return
         for k, v in sorted(d.items()):
             if not skip_types or not isinstance(v, skip_types):
                 print(" %s: %s" % (k, v))

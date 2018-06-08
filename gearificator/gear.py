@@ -114,6 +114,8 @@ def run_gear_docker(dockerimage, testdir):
 
 def build_gear(buildir, docker_image):
     lgr.info("Building gear docker image %s", docker_image)
+    if len(docker_image) > 128:
+        raise ValueError("too long (%d) tag: %s" % len(docker_image), docker_image)
     return subprocess_call(
         ['docker', 'build', '-t', docker_image, '.'],
         cwd=buildir,
@@ -166,6 +168,7 @@ def create_gear(obj,
                 pip_packages=[],
                 source_files=[],
                 prepend_paths=[],
+                envvars={},
                 dummy=False,
                 base_image=None,
                 # TODO:
@@ -194,7 +197,7 @@ def create_gear(obj,
 
     version = __version__ + (
         backend.get_version() if hasattr(backend, 'get_version') else ''
-    ) + '.1'
+    ) + '.3'
 
     manifest, outputs = backend.extract_manifest(obj, defaults=defaults)
     if version:
@@ -254,7 +257,8 @@ def create_gear(obj,
     gear_spec['run'] = create_run(
         os.path.join(outdir, 'run'),
         source_files=source_files,
-        prepend_paths=prepend_paths
+        prepend_paths=prepend_paths,
+        envvars=envvars
     )
 
     # Create a dedicated Dockerfile
@@ -373,7 +377,7 @@ ENTRYPOINT ["/flywheel/v0/run"]
     return content
 
 
-def create_run(fname, source_files, prepend_paths=None):
+def create_run(fname, source_files, prepend_paths=None, envvars={}):
     """Create the mighty "run" file which would be exactly the same in all of them
     """
     content = """\
@@ -390,7 +394,9 @@ set -eu
 
     if prepend_paths:
         content += 'export PATH=%s:$PATH\n' % (':'.join(prepend_paths))
-
+    if envvars:
+        for var in envvars.items():
+            content += 'export %s=%s\n' % var
     # Finally actually run the thing
     content += "python -m gearificator \"$@\"\n"
     with open(fname, 'w') as f:
