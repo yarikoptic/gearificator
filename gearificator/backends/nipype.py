@@ -232,7 +232,7 @@ def get_suite(obj, docker_image=None):
     assert names[0] == 'nipype'
     assert names[1] == 'interfaces'
 
-    suite = "Nipype %s" % names[2].upper()
+    suite = "%s" % names[2].upper()
     if docker_image:
         # TODO: add a check if docker image exists already
         # and if not -- add "unknown" as the version
