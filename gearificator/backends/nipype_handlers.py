@@ -191,6 +191,10 @@ def Str(trait, **kwargs):
     return rec
 
 
+# discovered while going through fsl.epi
+String = Str
+
+
 def Directory(trait, **kwargs):
     # typically an output directory to be specified and even created
     # rec = _get_rec('string', trait, **kwargs)
