@@ -101,12 +101,15 @@ def check_md5(target, output):
             output_md5, target_md5)
 
 
+from collections import defaultdict
+
 class TestDrivers(object):
     """A helper to provide test "drivers" for a given file """
     DRIVERS = {
         '.*\.nii\.gz': check_nib_diff,
     }
-    DEFAULT = check_md5
+    # heh, starts to bind to the instance etc... didn't know
+    #DEFAULT = check_md5
 
     def __call__(self, filename):
         matched_any = False
@@ -115,7 +118,7 @@ class TestDrivers(object):
                 matched_any = True
                 yield driver
         if not matched_any:
-            yield self.DEFAULT
+            yield check_md5
 
 test_drivers = TestDrivers()
 
