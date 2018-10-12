@@ -109,8 +109,10 @@ def _check(testfile, outputdir):
     mismatches = {}
     for f in target_files:
         # verify the content match
-        target_md5 = md5sum(op.join(target, f))
-        output_md5 = md5sum(op.join(outputdir, 'output', f))
+        target_file = op.join(target, f)
+        output_file = op.join(outputdir, 'output', f)
+        target_md5 = md5sum(target_file)
+        output_md5 = md5sum(output_file)
         if target_md5 != output_md5:
             mismatches[f] = (output_md5, target_md5)
     if mismatches:
