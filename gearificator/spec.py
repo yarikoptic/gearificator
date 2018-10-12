@@ -129,6 +129,7 @@ def _process(
         spec=None,  # TODO: make configurable
         regex=None,
         run_tests=False,
+        run_tests_regex=None,
         run_testsdir=None,
         gear=None,
         toppath=None,
@@ -232,9 +233,13 @@ def _process(
                     lgr.warning("TESTS: no tests were found")
                 else:
                     lgr.info("TESTS: found %d tests", len(tests))
-                for itest, test in enumerate(tests):
+                for itest, test in enumerate(sorted(tests)):
                     testname = op.splitext(op.basename(test))[0]
                     testmsg = " test #%d: %s" % (itest+1, testname)
+                    if run_tests_regex:
+                        if not re.match(run_tests_regex, testname):
+                            lgr.info(testmsg + " skipped")
+                            continue
                     lgr.debug(" running " + testmsg)
                     # TODO: Redo all the below to just use one of the runners
                     # such as pytest internally
@@ -316,6 +321,7 @@ def _process(
                 spec=pathspec,
                 regex=regex,
                 run_tests=run_tests,
+                run_tests_regex=run_tests_regex,
                 gear=gear,
                 toppath=new_path,
                 params=new_params
@@ -338,6 +344,7 @@ def grp():
               type=click.Choice(['skip', 'native', 'gear']), default='gear',
               help='Run tests if present.  "native" runs on the host and "gear" '
                    'via the dockerized gear')
+@click.option('--run-tests-regex', help='Regular expression to run only the matching tests')
 @click.option('--gear', type=click.Choice(
               ['spec', 'skip-build', 'dummy', 'build', 'docker-push', 'fw-upload', 'exchange']),
               multiple=True,

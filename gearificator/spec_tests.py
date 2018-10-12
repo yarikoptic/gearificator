@@ -12,6 +12,7 @@ import yaml
 import json
 import os
 import os.path as op
+import re
 import shutil
 
 from .cli_base import cli
@@ -86,6 +87,39 @@ def get_files(d):
     return set(r)
 
 
+def check_nib_diff(target, output):
+    from nibabel.cmdline.diff import diff
+    nib_diff = diff([target, output])
+    if nib_diff:
+        return "nibabel diff detected differences: %s" % str(nib_diff)
+
+def check_md5(target, output):
+    target_md5 = md5sum(target)
+    output_md5 = md5sum(output)
+    if target_md5 != output_md5:
+        return "md5 mismatch on following files (output, target): %s" % str(
+            output_md5, target_md5)
+
+
+class TestDrivers(object):
+    """A helper to provide test "drivers" for a given file """
+    DRIVERS = {
+        '.*\.nii\.gz': check_nib_diff,
+    }
+    DEFAULT = check_md5
+
+    def __call__(self, filename):
+        matched_any = False
+        for file_regex, driver in self.DRIVERS.items():
+            if re.match(file_regex, filename):
+                matched_any = True
+                yield driver
+        if not matched_any:
+            yield self.DEFAULT
+
+test_drivers = TestDrivers()
+
+
 def _check(testfile, outputdir):
     """Given a testfile spec and output directory, perform all the tests
 
@@ -106,19 +140,20 @@ def _check(testfile, outputdir):
     if only_in_target:
         raise AssertionError("Expected files were not found in output: %s"
                              % only_in_target)
-    mismatches = {}
+    failures = {}
     for f in target_files:
         # verify the content match
         target_file = op.join(target, f)
         output_file = op.join(outputdir, 'output', f)
-        target_md5 = md5sum(target_file)
-        output_md5 = md5sum(output_file)
-        if target_md5 != output_md5:
-            mismatches[f] = (output_md5, target_md5)
-    if mismatches:
+        for test_driver in test_drivers(target_file):
+            test_failure = test_driver(target_file, output_file)
+            if test_failure:
+                failures[f] = test_failure
+
+    if failures:
         raise AssertionError(
             "md5 mismatch on following files (output, target): %s"
-            % str(mismatches)
+            % str(failures)
         )
 
 
