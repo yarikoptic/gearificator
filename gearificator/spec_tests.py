@@ -52,6 +52,8 @@ def _prepare(testfile, outputdir):
     datasets_path = op.join(datasets_path, 'inputs')
     lgr.debug(" considering datasets under %s", datasets_path)
     for in_name, in_file in test_spec.get('inputs').items():
+        if '/' not in in_file:
+            raise ValueError("input file (got %r) is missing a path" % in_file)
         in_dataset, in_dataset_path = in_file.split('/', 1)
         in_path = op.join(datasets_path, in_file)
         # copy under inputs/in_name/basename(in_file)

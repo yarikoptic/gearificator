@@ -165,6 +165,8 @@ def _MultiPath(orig_type, trait, **kwargs):
 
 
 def InputMultiPath(trait, **kwargs):
+    # TODO: it is intended to be an array actually so multiple files possibly
+    # were specified!
     return _MultiPath('InputMultiPath', trait, **kwargs)
 
 # typically it is InputMultiPath (I guess it was all refactored in nipype) but since just bound to
