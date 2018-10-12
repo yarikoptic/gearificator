@@ -204,9 +204,16 @@ def extract_manifest(cls, defaults={}):
         assert False, "expecting only files in the output, not config settings. Got %s" % config_out
     # strip outputs of unneeded fields
     # may be eventually we would bring some back
-    for v in outputs.values():
+    for k, v in outputs.items():
         for f in 'base', 'optional':
             v.pop(f, None)
+        # Some output fields have corresponding 'inputs' config, e.g. to define the
+        # output filename.  I think in our case it doesn't matter at all, BUT we will
+        # at least position them after "proper" input arguments for now.
+        # TODO: may be just do not bother at all *OR* should migrate into config?
+        if k in inputs:
+            inputs[k] = inputs.pop(k)
+
     # TODO: in some cases outputs might have the same field as
     # declared in inputs (e.g. 'out_file' in BET). How do we deal with it?
     # One way is at the run time, in case user specified that one,
