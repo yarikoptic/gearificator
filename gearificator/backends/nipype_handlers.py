@@ -119,9 +119,8 @@ def Enum(trait, **kwargs):
 
 
 def List(trait, **kwargs):
-    raise NotImplementedError("array - webui")  # Web UI still doesn't support them any sensible way
     if len(trait.inner_traits) != 1:
-        raise ValueError(
+        raise NotImplementedError(
             "Don't know yet how to treat a List trait with multiple types: %s"
             % trait.inner_traits
         )
@@ -131,7 +130,13 @@ def List(trait, **kwargs):
     rec_inner = inner_handler(inner_trait)   # we care only about "type" here actually
     rec = _get_rec('array', trait, **kwargs)
     rec['items'] = {'type': rec_inner['type']}
-    return rec
+    # Web UI still doesn't support them any sensible way
+    #  skip if not mandatory (i.e. if optional) and raise otherwise
+    if rec.get('optional', False):
+        lgr.info("Skipping since optional list/array - not supported by webui yet")
+        return None   # rec
+    else:
+        raise NotImplementedError("array - webui")
 
 
 def Tuple(trait, **kwargs):
