@@ -210,7 +210,20 @@ def Directory(trait, **kwargs):
     #     #       to be created if specified
     #     pass
     # return rec
-    return File(trait, **kwargs)
+    rec = File(trait, **kwargs)
+    if rec.get('optional', False):
+        lgr.info("Skipping since optional Directory - not supported by webui yet")
+        # TODO: might be actually just to specify output directory, e.g. in dcm2niix
+        # but not sure if we should worry about exposing those as well
+        return None   # rec
+    elif rec.get('xor', None):
+        # also do not bother for now.
+        # usecase: dcm2niix, see https://github.com/yarikoptic/gearificator/issues/1#issuecomment-433524222
+        # but ideally all this logic should be done above after the collection finished
+        return None
+    else:
+        raise NotImplementedError("Directory - webui")
+
 
 
 def print_obj(o, include=lambda x: not x.startswith('_'), pref='', memo=None):
