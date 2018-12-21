@@ -305,10 +305,19 @@ def create_dockerfile(
     entire spec
     """
 
+    # to minimize image layers size
+    cleanup_cmd = "rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*"
+
     deb_packages_line = ' '.join(deb_packages) if deb_packages else ''
-    extra_deb_packages_line = 'RUN eatmydata apt-get install -y --no-install-recommends ' \
-                               + ' '.join(extra_deb_packages)  if extra_deb_packages else ''
-    pip_line = "RUN pip install %s" % (' '.join(pip_packages)) if pip_packages else ''
+    extra_deb_packages_str = (' '.join(extra_deb_packages) if extra_deb_packages else '')
+    extra_deb_packages_line = """
+RUN apt-get update \\ 
+    && apt-get install -y --no-install-recommends %(extra_deb_packages_str)s \\
+    && %(cleanup_cmd)s
+""" % locals()
+    pip_packages_str = ' '.join(pip_packages) if pip_packages else ''
+    pip_line = "RUN pip install %(pip_packages_str)s && %(cleanup_cmd)s" \
+            % locals()
 
     if dummy:
         base_image = 'busybox:latest'
@@ -318,27 +327,42 @@ FROM %(base_image)s
 MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
     """
     if not dummy:
+        if base_image.startswith('neurodebian:'):
+            template += """
+# Make image reproducible based on the date/state of things in Debian/NeuroDebian
+# land.
+# Time format yyyymmdd 
+RUN nd_freeze 20181206
+"""
+        else:
+            raise NotImplementedError(
+                "Did not bother implementing support for freeze for "
+                "non-neurodebian base images")
+            # Also below removed eatmydata since now by default is used for
+            # apt-get on neurodebian images
+# Not doing it since now using nd_freeze, no mirrors
+#         template += """
+# # Install additional APT mirror for NeuroDebian for better availability/resilience
+# RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
+# RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
+# """
         template += """
-# TODO: use snapshots for reproducible image!
-# Install additional APT mirror for NeuroDebian for better availability/resilience
-RUN echo deb http://neurodeb.pirsquared.org data main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
-RUN echo deb http://neurodeb.pirsquared.org stretch main contrib non-free >> /etc/apt/sources.list.d/neurodebian.sources.list
-
 # To prevent interactive debconf during installations
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \\
-    apt-get install -y eatmydata
 
 # Make directory for flywheel spec (v0)
 # TODO:  gearificator prepare-docker recipename_or_url
 # cons: would somewhat loose cached steps (pre-installation, etc)
 # For now -- entire manual template
-RUN eatmydata apt-get update && echo "count 1" && \\
-    eatmydata apt-get install -y --no-install-recommends python-pip %(deb_packages_line)s
+RUN apt-get update && echo "count 1" \\
+    && apt-get install -y --no-install-recommends python-pip %(deb_packages_line)s \\
+    && %(cleanup_cmd)s
 
 # Download/Install gearificator suite
 # TODO  install git if we do via git
-RUN eatmydata apt-get install -y git python-setuptools
+RUN apt-get update \\ 
+    && apt-get install -y git python-setuptools \\
+    && %(cleanup_cmd)s
 # TEMPMOVE RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo 7
 # TEMPMOVE RUN pip install -e /srv/gearificator
 """
@@ -355,14 +379,13 @@ ENV LC_ALL C.UTF-8
         template += """
 # Now we do this particular Gear specific installations
 %(extra_deb_packages_line)s
-RUN apt-get clean
 %(pip_line)s
     """
 
         # TEMP do it here for now since it is volatile
         template += """
 RUN git clone git://github.com/yarikoptic/gearificator /srv/gearificator && echo 7
-RUN pip install -e /srv/gearificator
+RUN pip install -e /srv/gearificator && %(cleanup_cmd)s
 """
     template += """
 COPY run ${FLYWHEEL}/run
