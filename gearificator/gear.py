@@ -197,7 +197,7 @@ def create_gear(obj,
 
     version = __version__ + (
         backend.get_version() if hasattr(backend, 'get_version') else ''
-    ) + '.3'
+    ) #  + '.3'
 
     manifest, outputs = backend.extract_manifest(obj, defaults=defaults)
     if version:

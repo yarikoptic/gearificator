@@ -63,7 +63,8 @@ def get_nipype_version():
     # versioning needs fixup, see https://github.com/nipy/nipype/issues/2613
     # But actual version is the one in docker image, which is 1.0.3 ATM
     # And we use git nipype only for docs fixups ATM
-    return "1.0.3"  # nipype.__version__
+    # import pdb; pdb.set_trace()
+    return nipype.__version__
 
 
 def get_version():
@@ -71,7 +72,8 @@ def get_version():
     # versioning needs fixup, see https://github.com/nipy/nipype/issues/2613
     # But actual version is the one in docker image, which is 1.0.3 ATM
     # And we use git nipype only for docs fixups ATM
-    return ".nipype.%s" % get_nipype_version()
+    nipype_version = get_nipype_version().replace('-dev+', '.')
+    return ".nipype.%s" % nipype_version
 
 
 def analyze_spec(spec_cls, order_first=None, defaults={}):
