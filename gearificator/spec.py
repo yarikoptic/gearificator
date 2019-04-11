@@ -179,6 +179,7 @@ def _process(
         # if points to a class we need to process.  If to a module, then depends
         # on recurse
         try:
+            lgr.log(5, "Considering %s:", toppath)
 
             obj = get_object_from_path(toppath)
             if regex and not re.search(regex, toppath):
@@ -191,8 +192,6 @@ def _process(
             if not obj.output_spec:
                 raise SkipProcessing("no output spec")
 
-
-            lgr.debug("%s process!", toppath)
 
             if not outputdir:
                 raise SkipProcessing("output_dir")
@@ -224,23 +223,27 @@ def _process(
                 # except Exception as e:
                 #     lgr.warning("ERROR happened: %s" % str(e))
                 #     raise SkipProcessing("ERROR happened: %s" % str(e))
+            elif op.exists(gearpath):
+                lgr.info("Processing %s:", toppath)
+            else:
+                raise SkipProcessing("Gear is not built and there is no gear directory")
 
             if run_tests != "skip":
                 # TODO Move away and generalize
                 testspath = op.join(gearpath, 'tests')
                 tests = glob(op.join(testspath, '*.yaml'))
                 if not tests:
-                    lgr.warning("TESTS: no tests were found")
+                    lgr.warning(" TESTS: no tests were found")
                 else:
-                    lgr.info("TESTS: found %d tests", len(tests))
+                    lgr.info(" TESTS: found %d tests", len(tests))
                 for itest, test in enumerate(sorted(tests)):
                     testname = op.splitext(op.basename(test))[0]
-                    testmsg = " test #%d: %s" % (itest+1, testname)
+                    testmsg = "  test #%d: %s" % (itest+1, testname)
                     if run_tests_regex:
                         if not re.match(run_tests_regex, testname):
                             lgr.info(testmsg + " skipped")
                             continue
-                    lgr.debug(" running " + testmsg)
+                    lgr.debug("  running" + testmsg)
                     # TODO: Redo all the below to just use one of the runners
                     # such as pytest internally
                     try:
@@ -271,8 +274,15 @@ def _process(
                         #  assume that they all must be identical
                         lgr.info(testmsg + " passed")
                     except Exception as exc:
+                        # for now pdb on generic --pdb if there was some setup
                         lgr.error(testmsg + " FAILED: %s", exc)
                         tests_errored += 1
+                        from .utils import _sys_excepthook
+                        if sys.excepthook != _sys_excepthook:
+                            # TODO: we could call out to sys.excepthook with
+                            #   (type, value, tb) details instead of reraising
+                            #  that should allow to proceed after pdb session
+                            raise
                     finally:
                         # TODO shutil.rmtree(testdir)
                         import os
