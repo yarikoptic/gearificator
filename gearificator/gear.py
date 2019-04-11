@@ -332,7 +332,7 @@ MAINTAINER Yaroslav O. Halchenko <debian@onerussian.com>
 # Make image reproducible based on the date/state of things in Debian/NeuroDebian
 # land.
 # Time format yyyymmdd 
-RUN nd_freeze 20181221
+RUN nd_freeze 20190402
 """
         else:
             raise NotImplementedError(
