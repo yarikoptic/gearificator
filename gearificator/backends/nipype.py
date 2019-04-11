@@ -256,21 +256,19 @@ def get_suite(obj, docker_image=None):
     assert names[1] == 'interfaces'
 
     suite = "%s" % names[2].upper()
+    from ..gear import subprocess_call
+    cmd2pkg = {
+        'fsl': 'fsl-core', 'dcm2nii': 'dcm2niix',
+    }.get(names[2].lower(), names[2].lower())
     if docker_image:
         # TODO: add a check if docker image exists already
         # and if not -- add "unknown" as the version
-        from ..gear import subprocess_call
-        dpkg_output, err = subprocess_call(
-            ['docker', 'run', '--rm', '--entrypoint=dpkg', docker_image, '-l',
-             {
-                 'fsl': 'fsl-core',
-                 'dcm2nii': 'dcm2niix',
-             }.get(names[2].lower(), names[2].lower())
-             ]
-        )
-
-        suite += " %s" \
-            % get_pkg_version(dpkg_output).split(':', 1)[-1].split('.')[0]
+        qcmd = ['docker', 'run', '--rm', '--entrypoint=dpkg', docker_image]
+    else:
+        qcmd = ['dpkg']
+    dpkg_output, err = subprocess_call(qcmd + ['-l', cmd2pkg])
+    suite += " %s" \
+             % get_pkg_version(dpkg_output).split(':', 1)[-1].split('.')[0]
     return suite
 
 
