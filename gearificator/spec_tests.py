@@ -95,15 +95,17 @@ def check_nib_diff(target, output):
     if nib_diff:
         return "nibabel diff detected differences: %s" % str(nib_diff)
 
+
 def check_md5(target, output):
     target_md5 = md5sum(target)
     output_md5 = md5sum(output)
     if target_md5 != output_md5:
-        return "md5 mismatch on following files (output, target): %s" % str(
-            output_md5, target_md5)
+        return "md5 mismatch on following files (output, target): %s != %s" \
+               % (output_md5, target_md5)
 
 
 from collections import defaultdict
+
 
 class TestDrivers(object):
     """A helper to provide test "drivers" for a given file """
