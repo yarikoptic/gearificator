@@ -12,7 +12,7 @@ Q&D HOWTO ATM
 -------------
 
      git clone git://github.com/yarikoptic/gearificated-nipype
-     gearificator spec process --run-tests gear --gear build gearificated-nipype
+     gearificator spec process --run-tests gear -g build gearificated-nipype
 
 which should produce identical (to what already there) results (you could use
 `git -C gearificated-nipype status` to check).  Also the outputs of the test runs
