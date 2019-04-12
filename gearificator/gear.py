@@ -93,7 +93,7 @@ def run_gear_native(gearpath, testdir):
     return outs
 
 
-def run_gear_docker(dockerimage, testdir):
+def run_gear_docker(dockerimage, testdir, cmd=None):
     # copy/paste largely for now to RF later TODO
     logsdir = op.join(testdir, 'logs')  # common
 
@@ -101,10 +101,21 @@ def run_gear_docker(dockerimage, testdir):
         return ["-v", "%s/%s:%s/%s"
                 % (op.realpath(testdir), s, GEAR_FLYWHEEL_DIR, s)]
 
+    if cmd:
+        entry_point_args = ['--entrypoint="%s"' % cmd[0]]
+        cmd_args = cmd[1:]
+    else:
+        entry_point_args = cmd_args = []
+
     outs = subprocess_call(
         ['docker', 'run', '--rm']
+        # run under current user so we don't need
+        # to deal with root owned results etc
+        + ["-u", "%s:%s" % (os.getuid(), os.getgid())]
         + sum(map(_m, [GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_CONFIG_FILENAME]), [])
-        + [dockerimage],
+        + entry_point_args
+        + [dockerimage]
+        + cmd_args,
         cwd=testdir,
         logsdir=logsdir,
         env=dict(os.environ, FLYWHEEL='.')
@@ -390,6 +401,7 @@ RUN pip install -e /srv/gearificator && %(cleanup_cmd)s
     template += """
 COPY run ${FLYWHEEL}/run
 COPY manifest.json ${FLYWHEEL}/manifest.json
+RUN chmod a+rX -R ${FLYWHEEL}  # allow everyone access the content
 
 # Configure entrypoint
 ENTRYPOINT ["/flywheel/v0/run"]
