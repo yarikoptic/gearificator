@@ -110,7 +110,9 @@ def run_gear_docker(dockerimage, testdir, cmd=None):
     outs = subprocess_call(
         ['docker', 'run', '--rm']
         # run under current user so we don't need
-        # to deal with root owned results etc
+        # to deal with root owned results etc.
+        # Note: gears < 0.2.dev2 will might not have readable /flywheel
+        #       due to too restrictive permissions/umask?
         + ["-u", "%s:%s" % (os.getuid(), os.getgid())]
         + sum(map(_m, [GEAR_INPUTS_DIR, GEAR_OUTPUT_DIR, GEAR_CONFIG_FILENAME]), [])
         + entry_point_args

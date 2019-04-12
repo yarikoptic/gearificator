@@ -4,6 +4,7 @@
 import click
 import re
 import sys
+import os
 import os.path as op
 import shutil
 import tempfile
@@ -19,6 +20,10 @@ from .gear import (
 )
 from . import get_logger
 from .utils import import_module_from_file
+from .consts import (
+    GEAR_FLYWHEEL_DIR,
+    GEAR_OUTPUT_DIR,
+)
 
 lgr = get_logger('spec')
 
@@ -201,7 +206,7 @@ def _process(
             # full output path
             gearpath = opj(outputdir, geardir)
 
-            gear_report = None
+            gear_report = docker_image = None
             if 'skip-build' not in gear:
                 try:
                     gear_report = create_gear(
@@ -213,6 +218,7 @@ def _process(
                         dummy='dummy' in gear,
                         **new_params.get('params', {})
                     )
+                    docker_image = gear_report["docker_image"]
                     lgr.info("%s gear generated", toppath)
                 except SyntaxError:
                     # some grave error -- blow
@@ -264,7 +270,13 @@ def _process(
                         elif run_tests == 'gear':
                             if not gear_report:
                                 raise ValueError("--gear option must not be 'skip'")
-                            run_gear_docker(gear_report["docker_image"], testdir)
+                            run_gear_docker(docker_image, testdir)
+                            # change ownership back from root on output directory
+                            # Redone via uid:gid mapping into Docker container
+                            # and making all needed components readable with changes to Dockerfile
+                            # run_gear_docker(docker_image, testdir,
+                            #                 ["chown", "-R", os.getuid(),
+                            #                  "%s/%s" % (GEAR_FLYWHEEL_DIR, GEAR_OUTPUT_DIR)])
                         else:
                             raise ValueError(run_tests)
 
@@ -292,7 +304,7 @@ def _process(
             if 'docker-push' in gear:
                 if not gear_report:
                     raise ValueError("--gear option must not be 'skip'")
-                docker_push_gear(gear_report['docker_image'])
+                docker_push_gear(docker_image)
             if 'fw-upload' in gear:
                 fw_upload_gear(gearpath)
             if 'exchange' in gear:

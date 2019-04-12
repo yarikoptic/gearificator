@@ -93,15 +93,20 @@ def check_nib_diff(target, output):
     from nibabel.cmdline.diff import diff
     nib_diff = diff([target, output])
     if nib_diff:
-        return "nibabel diff detected differences: %s" % str(nib_diff)
+        diffs = [
+            "%10s: %s != %s" % (k, str(v1), str(v2))
+            for k, (v1, v2) in nib_diff.items()
+        ]
+        diffs = (os.linesep + "  ").join([''] + diffs)
+        return "nibabel diff (target, output):%s" % diffs
 
 
 def check_md5(target, output):
     target_md5 = md5sum(target)
     output_md5 = md5sum(output)
     if target_md5 != output_md5:
-        return "md5 mismatch on following files (output, target): %s != %s" \
-               % (output_md5, target_md5)
+        return "md5 mismatch (target, output): %s != %s" \
+               % (target_md5, output_md5)
 
 
 from collections import defaultdict
@@ -155,13 +160,11 @@ def _check(testfile, outputdir):
         for test_driver in test_drivers(target_file):
             test_failure = test_driver(target_file, output_file)
             if test_failure:
+                lgr.error("Failure %s: %s", f, test_failure)
                 failures[f] = test_failure
 
     if failures:
-        raise AssertionError(
-            "md5 mismatch on following files (output, target): %s"
-            % str(failures)
-        )
+        raise AssertionError("%d out of %d file(s) differ" % (len(failures), len(target_files)))
 
 
 # CLI
